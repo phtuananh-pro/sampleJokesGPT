@@ -266,7 +266,7 @@ def main():
 
     model, tokenizer = load_model(model_dir, args.device)
 
-    print("Jokes bot ready. Type 'exit' to quit.")
+    print("Jokesjoke  bot ready. Type 'exit' to quit.")
 
     while True:
         user_text = input("\nYou: ").strip()
