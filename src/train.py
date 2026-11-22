@@ -14,8 +14,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import platform
 import random
 import shutil
+import time
 from collections import Counter
 from dataclasses import asdict
 from datetime import datetime
@@ -27,6 +29,33 @@ import torch.nn.functional as F
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
 from .topics import topic_prompt
+
+
+def log(message: str, *, step: int | None = None, total: int | None = None) -> None:
+    """Timestamp console messages, including completed/total training steps."""
+    progress = f" [{step}/{total}]" if step is not None and total is not None else ""
+    print(f"[{datetime.now().strftime('%H:%M:%S')}]{progress} {message}", flush=True)
+
+
+def format_duration(seconds: float | None) -> str:
+    """Show elapsed time and ETA as hours:minutes:seconds."""
+    if seconds is None:
+        return "n/a"
+    hours, remainder = divmod(max(0, int(seconds)), 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def model_summary(model: GPT, device: str) -> str:
+    """Describe architecture, hardware, and trainable parameter count."""
+    cfg = model.config
+    params = sum(p.numel() for p in model.parameters())
+    processor = torch.cuda.get_device_name(0) if device == "cuda" else (platform.processor() or platform.machine())
+    return (
+        f"device={device} ({processor}); parameters={params:,} ({params / 1e6:.2f}M); "
+        f"layers={cfg.n_layer}; heads={cfg.n_head}; embedding={cfg.n_embd}; "
+        f"context={cfg.block_size}; vocabulary={cfg.vocab_size}; dropout={cfg.dropout}"
+    )
 
 
 STYLE_PROMPTS = {
@@ -235,7 +264,9 @@ def main():
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    print(f"Source: {len(records)} curated jokes, {len(supported)} supported subjects")
+    log(f"Source: {len(records):,} curated jokes; supported topics={len(supported)}; "
+        f"train/validation records={len(train_rows)}/{len(validation_rows)}; "
+        f"optimization steps={args.max_iters}", step=0, total=args.max_iters)
     # Train tokenizer on the prompts and jokes used by this run. Validation
     # records are allowed to influence BPE segmentation, not model weights.
     tokenizer_text = out / "tokenizer_corpus.tmp"
@@ -279,19 +310,32 @@ def main():
     }
     (out / "config.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
     best_train = float("inf")
-    print(f"Device: {args.device}; vocab: {tokenizer.vocab_size}; "
-          f"train/val sequences: {len(train_samples)}/{len(val_samples)}")
-    print("Training a generative model. The dataset is NOT needed at inference.")
+    log(f"Model: {model_summary(model, args.device)}", step=0, total=args.max_iters)
+    log(f"Training examples={len(train_samples):,}; validation examples={len(val_samples):,}; "
+        f"skipped too long={skipped_train + skipped_val}; "
+        f"batch={args.batch_size}; learning rate={args.learning_rate:g}; "
+        f"joke-ID loss weight={args.id_loss_weight:g}", step=0, total=args.max_iters)
+    log("Training a generative model; inference never loads joke records.",
+        step=0, total=args.max_iters)
+    started = time.perf_counter()
     for step in range(args.max_iters + 1):
         if step % args.eval_interval == 0 or step == args.max_iters:
             train_loss = estimate_loss(model, train_samples, args.eval_iters, args.batch_size, args.device, args.id_loss_weight)
             val_loss = estimate_loss(model, val_samples, args.eval_iters, args.batch_size, args.device, args.id_loss_weight)
-            print(f"step {step:5d}: completion train loss={train_loss:.3f} val loss={val_loss:.3f}", flush=True)
+            elapsed = time.perf_counter() - started
+            speed = step / elapsed if step else 0.0
+            eta = (args.max_iters - step) / speed if speed > 0 else None
+            log(f"completion train loss={train_loss:.3f}; validation loss={val_loss:.3f}; "
+                f"elapsed={format_duration(elapsed)}; "
+                f"speed={speed:.2f} steps/s; ETA={format_duration(eta)}",
+                step=step, total=args.max_iters)
             if train_loss < best_train:
                 best_train = train_loss
                 torch.save(model.state_dict(), out / "model.pt")
                 info["checkpoint"] = {"step": step, "train_loss": train_loss, "val_loss": val_loss}
                 (out / "config.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+                log(f"Saved improved checkpoint: train loss={train_loss:.3f}; "
+                    f"validation loss={val_loss:.3f}", step=step, total=args.max_iters)
         if step == args.max_iters:
             break
         x, y = batch_from_examples(train_samples, args.batch_size, args.device)
@@ -300,7 +344,19 @@ def main():
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
-    print("Finished. Inference needs only config.json, tokenizer.json, and model.pt")
+    elapsed = time.perf_counter() - started
+    checkpoint = info["checkpoint"]
+    log(f"Training finished in {format_duration(elapsed)}. "
+        f"Best checkpoint: step={checkpoint['step']}/{args.max_iters}; "
+        f"train loss={checkpoint['train_loss']:.3f}; "
+        f"validation loss={checkpoint['val_loss']:.3f}",
+        step=args.max_iters, total=args.max_iters)
+    log(f"Saved model configuration: {model_summary(model, args.device)}",
+        step=args.max_iters, total=args.max_iters)
+    log(f"Saved checkpoint to {out.resolve()}: "
+        f"model.pt={((out / 'model.pt').stat().st_size / 1024**2):.2f} MiB; "
+        "tokenizer.json; config.json. No dataset required for inference.",
+        step=args.max_iters, total=args.max_iters)
 
 
 if __name__ == "__main__":

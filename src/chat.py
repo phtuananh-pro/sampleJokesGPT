@@ -9,7 +9,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -18,6 +20,31 @@ import torch.nn.functional as F
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
 from .topics import JokeRequest, route_request, topic_matches
+
+
+def log(message: str) -> None:
+    """Timestamp inference diagnostics without changing the colored chat labels."""
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", flush=True)
+
+
+def describe_loaded_model(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
+                          joke_ids: list[int], device: torch.device, model_dir: Path) -> None:
+    """Print architecture, checkpoint quality, and generation capabilities."""
+    arch = model.config
+    params = sum(p.numel() for p in model.parameters())
+    device_name = torch.cuda.get_device_name(device) if device.type == "cuda" else "CPU"
+    checkpoint = cfg.get("checkpoint", {})
+    log(f"Loaded model from {model_dir.resolve()} on {device} ({device_name})")
+    log(f"Architecture: {params:,} parameters ({params / 1e6:.2f}M); "
+        f"layers={arch.n_layer}; heads={arch.n_head}; embedding={arch.n_embd}; "
+        f"context={arch.block_size}; vocab={tokenizer.vocab_size}; dropout={arch.dropout}")
+    log(f"Capabilities: {len(joke_ids):,} trained joke IDs; "
+        f"{len(cfg['routing']['topic_patterns'])} supported topics; no retrieval")
+    if checkpoint:
+        log(f"Checkpoint: step={checkpoint.get('step', 'n/a')}/"
+            f"{cfg.get('training', {}).get('max_iters', 'n/a')}; "
+            f"train loss={checkpoint.get('train_loss', 'n/a')}; "
+            f"validation loss={checkpoint.get('val_loss', 'n/a')}")
 
 
 @dataclass
@@ -190,15 +217,20 @@ def parse_args():
     p.add_argument("--temperature", type=float, default=0.0,
                    help="Answer-body temperature; 0 favors a single learned full joke")
     p.add_argument("--top_k", type=int, default=20)
+    p.add_argument("--verbose", action="store_true",
+                   help="Show request topic, response status, and latency")
     return p.parse_args()
 
 
 def main():
     args = parse_args()
     device = choose_device(args.device)
-    model, tokenizer, cfg, ids = load_model(Path(args.model_dir), device)
-    print(f"JokeGPT v2 ready on {device}. Types supported: "
-          f"{len(cfg['routing']['topic_patterns'])} topics. Type exit to quit.")
+    model_dir = Path(args.model_dir)
+    model, tokenizer, cfg, ids = load_model(model_dir, device)
+    describe_loaded_model(model, tokenizer, cfg, ids, device, model_dir)
+    log(f"Decoding: attempts={args.attempts}; max tokens={args.max_new_tokens}; "
+        f"ID temperature={args.id_temperature:g}; body temperature={args.temperature:g}; "
+        f"top-k={args.top_k}. Type exit to quit.")
     you_label = "\033[96mYou:\033[0m"
     bot_label = "\033[93mJoke bot:\033[0m"
     while True:
@@ -211,11 +243,16 @@ def main():
             break
         if not query:
             continue
+        started = time.perf_counter()
         answer, status = generate_best(
             model, tokenizer, cfg, ids, device, query, args.attempts,
             args.max_new_tokens, args.id_temperature, args.temperature, args.top_k,
         )
         print(f"\n{bot_label} {answer}")
+        if args.verbose:
+            intent = route_request(query, cfg["routing"]["topic_patterns"])
+            log(f"Response: topic={intent.topic or 'general'}; status={status}; "
+                f"latency={time.perf_counter() - started:.2f}s")
 
 
 if __name__ == "__main__":

@@ -98,7 +98,30 @@ python -m src.train --device cpu --max_iters 3 --eval_interval 1 --eval_iters 1 
 
 Training creates `model.pt` (weights), `tokenizer.json` (BPE vocabulary and special tokens), and `config.json` (architecture, dataset hash, runtime settings, topic routing metadata, available learned identities, and checkpoint losses). **Only these three files are needed for inference.** Training asks before overwriting an existing model folder; `--overwrite` skips confirmation.
 
-CPU runs are supported with smaller defaults; full training is much better suited to CUDA. Duration depends on hardware and settings; no measured training-time benchmark is claimed here.
+CPU runs are supported with smaller defaults; full training is much better suited to CUDA. See **Estimation time** below for rough planning ranges. After several evaluation intervals, use the log's own measured ETA for your hardware.
+
+Training logs have a 24-hour local timestamp, completed/total optimization steps, train and validation loss, elapsed time, throughput and estimated remaining time. At step 0 the ETA is not available. Example (illustrative values, not a measured run):
+
+```text
+[18:25:01] [0/12000] Model: device=cuda; parameters=...; layers=5; heads=4; ...
+[18:29:12] [200/12000] completion train loss=1.234; validation loss=2.345; elapsed=00:04:11; speed=0.80 steps/s; ETA=04:06:52
+[18:29:12] [200/12000] Saved improved checkpoint: train loss=1.234; validation loss=2.345
+```
+
+The final log repeats the saved model configuration, best checkpoint step and losses, total elapsed time, and weight-file size.
+
+### Model output folder
+
+Each run saves three inference artifacts:
+
+```text
+models/jokes_v2/
+├── model.pt        # Learned weights from the selected checkpoint
+├── tokenizer.json  # Byte-level BPE vocabulary and joke-ID tokens
+└── config.json     # Architecture, training metadata, topic router and losses
+```
+
+Only these three files are required for inference; the chatbot never loads source jokes. The training log shows the final folder, checkpoint step, size and configuration.
 
 ### Main training arguments
 
@@ -126,6 +149,20 @@ CPU runs are supported with smaller defaults; full training is much better suite
 | `--seed` | `1337` | Random seed |
 | `--overwrite` | off | Replace existing output without prompting |
 
+## Estimation time
+
+**Rough planning ranges, not measured benchmarks.** These estimates apply to the 1,440-record curated JokeGPT v2 corpus with current *device-specific* defaults: CPU uses 3 layers, width 192, batch 8, 3,000 updates; CUDA uses 5 layers, width 320, batch 24, 12,000 updates. Both use a 256-token context. **CPU and GPU runs perform different amounts of training.**
+
+| Hardware class | Example | Illustrative training time |
+|---|---|---|
+| Old desktop CPU | Intel Core i7-5820K | 4–18 hours |
+| High-end desktop CPU | Intel Core i7-12700K / Ryzen 9 5900X | 1–6 hours |
+| Low-end NVIDIA GPU | GTX 1660 / RTX 3050 | 1–5 hours |
+| Midrange NVIDIA GPU | RTX 3060 / RTX 4060 | 20 minutes–2 hours |
+| High-end NVIDIA GPU | RTX 4090 / RTX 5090 | 10–60 minutes |
+
+These ranges are **not validated on the listed devices**. PyTorch/CUDA configuration, cooling, background load, evaluation overhead and custom hyperparameters can change the result substantially. Initial tokenizer training adds time. Check `elapsed`, `steps/s`, and `ETA` after a few training evaluations for a more useful local estimate. A short run with `--max_iters 200` can help calibrate hardware speed but does not produce a usable trained chatbot.
+
 ## Chat
 
 ```powershell
@@ -149,6 +186,14 @@ For an identifiable subject, `src/topics.py` matches keywords in the request aga
 
 Sampling options include `--attempts` (6), `--max_new_tokens` (240), `--id_temperature` (0.75), `--temperature` (0 for greedy joke body), and `--top_k` (20). Increasing randomness may produce novel variations but also more broken or incomplete jokes.
 
+At startup, inference prints the checkpoint location and device, parameter count, architecture, BPE vocabulary size, topic and learned joke-ID counts, saved training step/losses, and decoding settings. For optional **per-request** diagnostics (detected topic, result status and latency):
+
+```powershell
+python -m src.chat --model_dir models/jokes_v2 --device auto --verbose
+```
+
+`--verbose` prints diagnostics after each answer, leaving the colored `You:` and `Joke bot:` interaction unchanged.
+
 ## Evaluate and test
 
 Unit tests check dataset shape, topic routing, and generation mechanics:
@@ -163,7 +208,68 @@ After actually training a checkpoint, run:
 python -m src.evaluate --model_dir models/jokes_v2 --device auto
 ```
 
-This generates responses to 20 fixed requests and writes `models/jokes_v2/evaluation.json` with `general`, `topic`, `fallback`, and `incomplete` outcomes. Check the **full joke text** manually as well: EOS and lexical keyword matches are necessary engineering diagnostics, not evidence of humor quality or truthfully interpreted topics. A trained v2 model has not yet been demonstrated or quantitatively validated in this repository.
+This generates responses to 20 fixed requests and writes `models/jokes_v2/evaluation.json` with `general`, `topic`, `fallback`, and `incomplete` outcomes. Check the **full joke text** manually as well: EOS and lexical keyword matches are necessary engineering diagnostics, not evidence of humor quality or truthfully interpreted topics. Interactive usage can demonstrate the chatbot working, but this repository does not publish a quantitative generation-quality benchmark. Evaluate your own checkpoint.
+
+## How Training Works: From Text Prediction to a Joke Chatbot
+
+This repository extends [sampleGPT](https://github.com/phtuananh-pro/sampleGPT), a basic decoder-only Transformer trained to predict the next token in continuous text. **JokeGPT retains the same Transformer architecture and next-token objective**, but changes the examples, loss mask, prompt conditioning and response termination.
+
+### 1. Convert curated records to conversations
+
+`data/jokes_clean.jsonl` is already curated: there is **no cleaning script to run**. Each row supplies a complete joke, style and candidate subject labels. At training time, `src/train.py:examples_for_record` creates general, style-specific and eligible topic-specific prompts for that joke. A topic must have enough examples (`--min_topic_examples`, default 10) to become a dedicated training prompt.
+
+```text
+<|bos|><|user|>Tell me a joke about animals and pets.<|assistant|><|j0123|>Why did ...? Because ...!<|eos|>
+```
+
+`<|j0123|>` is a **learned joke-identity token** in the tokenizer's vocabulary. It conditions subsequent neural generation toward one full learned joke; it never indexes an external joke catalog.
+
+### 2. Train on complete conversations
+
+Unlike sampleGPT's random windows across an unstructured text stream, JokeGPT trains on one independent request-and-answer sequence at a time. Every example contains a request, joke identity, full joke and `<|eos|>`. Short examples are padded; sequences that exceed `--block_size` are **skipped instead of truncated**. All prompt variants from one original joke stay together in the same train/validation split.
+
+### 3. Mask the loss to the assistant's completion
+
+Every token prediction uses a causal Transformer context, but the loss deliberately ignores user-prompt and padding targets (`-100` in `src/train.py`). The model learns the response conditioned on the request.
+
+| Sequence element | Can condition later tokens? | Contributes to loss? |
+|---|---|---|
+| User prompt | Yes | No |
+| Learned joke identity | Yes | Yes, weighted |
+| Joke body | Yes | Yes |
+| `<|eos|>` | Yes | Yes |
+| Padding | No useful content | No |
+
+The assistant-only objective is weighted cross-entropy:
+
+\[
+\mathcal{L}=\frac{\sum_{t\in A}w_t\,[-\log P_\theta(x_t\mid x_{<t})]}{\sum_{t\in A}w_t}
+\]
+
+where `A` is the set of assistant target positions. The first assistant target (the joke ID) receives `--id_loss_weight` (default **5**); ordinary body and EOS targets have weight 1. This emphasizes **topic-to-joke association** without changing the underlying next-token model.
+
+### 4. Condition generation and finish at EOS
+
+`src/topics.py` uses lexical patterns from saved topic metadata to map the user's words to a canonical training prompt. The Transformer samples a learned joke-ID token, then generates the complete body autoregressively until `<|eos|>` or a maximum token limit. Incomplete answers are rejected; candidate topic checks improve relevance when possible. If a topic cannot be matched, the chatbot may explicitly announce a fallback. **There is no retrieval at inference**.
+
+### 5. Evaluate what the model actually learned
+
+The record-level train/validation split avoids repeating a joke under different prompts on both sides. The best checkpoint uses **training completion loss**, intentionally favoring recalling coherent learned jokes for this teaching example; held-out validation loss is reported separately for generalization. Lexical topic matches and EOS rates help debug the chatbot, but neither establishes that jokes are funny, safe or semantically relevant.
+
+## What This Adds Beyond sampleGPT
+
+| sampleGPT | JokeGPT v2 |
+|---|---|
+| Continuous text corpus | Curated JSONL records with full jokes, styles and topics |
+| Random fixed-length token windows | Independently padded, complete conversations |
+| Loss over all next-token targets | Assistant-only masked loss with weighted joke identity |
+| Generic text continuation | User- and topic-conditioned generation |
+| No per-joke identity | Learned joke-ID tokens supporting coherent full answers |
+| Open-ended continuation | Learned EOS stopping and candidate completeness checks |
+| Token-window train/validation split | Original-joke-level train/validation split |
+| Simple sample generation | Interactive chatbot, topic routing, explicit fallback and evaluation |
+
+The **Transformer itself is unchanged**: embeddings, causal multi-head attention, MLP blocks, cross-entropy and backpropagation are the same Part IV mechanisms. JokeGPT demonstrates how **data structure, conditional loss and decoding rules** turn a simple next-token predictor into an imperfect but useful task-specific chatbot—without pretrained weights or retrieval.
 
 ## Limits
 
