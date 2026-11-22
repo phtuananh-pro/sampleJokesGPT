@@ -156,9 +156,6 @@ class GPT(nn.Module):
         # reduces parameters; both module names remain in the state dict.
         self.lm_head.weight = self.token_embedding.weight
 
-        n_params = sum(p.numel() for p in self.parameters())
-        print(f"Model parameters: {n_params / 1e6:.2f}M")
-
     def _init_weights(self, module):
         """Initialize linear and embedding weights with a small normal scale."""
         if isinstance(module, nn.Linear):
