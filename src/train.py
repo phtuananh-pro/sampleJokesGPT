@@ -1,393 +1,306 @@
-"""Train the joke chatbot's decoder-only Transformer from serialized text.
+"""Teach a decoder-only GPT to complete *one whole joke* from a request.
 
-The loop samples complete request/joke conversations, computes assistant-only
-shifted next-token cross-entropy, and updates parameters with AdamW. Run from the
-repository root with ``python -m src.train``.
+Educational changes from random text-window training:
+  1. each supervised sequence is one bounded conversation, never two jokes;
+  2. a learned joke-ID token anchors one specific joke in model parameters;
+  3. prompt/padding targets are masked (loss only on joke ID, text and EOS);
+  4. record-level validation keeps the same joke out of both splits.
+
+Every target still comes from the NEXT token in the source sequence. Joke IDs
+are part of the generative model's internal vocabulary, not external retrieval.
 """
-
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-import platform
+import random
 import shutil
+from collections import Counter
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
-from .training_data import encode_conversations, parse_conversations, sample_batch, split_by_joke
+from .topics import topic_prompt
 
 
-# Smaller defaults keep the CPU path usable for a teaching-sized run.
-CPU_DEFAULTS = {
-    "bpe_vocab_size": 2000,
-    "bpe_min_pair_freq": 2,
-    "bpe_train_chars": 3_000_000,
-    "block_size": 256,
-    "batch_size": 32,
-    "max_iters": 5000,
-    "eval_interval": 100,
-    "eval_iters": 100,
-    "learning_rate": 3e-4,
-    "weight_decay": 0.1,
-    "grad_clip": 1.0,
-    "n_layer": 4,
-    "n_head": 4,
-    "n_embd": 256,
-    "dropout": 0.2,
-}
-
-# CUDA defaults use more parallel work and a wider/deeper model.
-GPU_DEFAULTS = {
-    "bpe_vocab_size": 2000,
-    "bpe_min_pair_freq": 2,
-    "bpe_train_chars": 3_000_000,
-    "block_size": 256,
-    "batch_size": 64,
-    "max_iters": 10000,
-    "eval_interval": 500,
-    "eval_iters": 100,
-    "learning_rate": 3e-4,
-    "weight_decay": 0.1,
-    "grad_clip": 1.0,
-    "n_layer": 6,
-    "n_head": 6,
-    "n_embd": 384,
-    "dropout": 0.2,
+STYLE_PROMPTS = {
+    "dad_joke": "Tell me a dad joke.",
+    "pun": "Tell me a pun.",
+    "one_liner": "Tell me a one-liner.",
+    "wordplay": "Tell me a wordplay joke.",
 }
 
 
-def choose_device(requested: str) -> str:
-    """Resolve ``auto`` to CUDA when available, otherwise CPU.
-
-    Explicit CUDA requests fail clearly if this PyTorch installation cannot
-    access an NVIDIA GPU, matching the behavior of the sampleGPT companion.
-    """
-    if requested == "auto":
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    if requested == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("--device cuda was requested, but CUDA is not available.")
-    return requested
-
-
-def confirm_overwrite(out_dir: Path) -> bool:
-    """Ask before replacing an existing run and its saved checkpoint."""
-    while True:
+def load_records(path: Path) -> list[dict]:
+    """Read pre-curated JSONL, validating its four teaching-data fields."""
+    records = []
+    for line_num, line in enumerate(path.open(encoding="utf-8"), 1):
+        if not line.strip():
+            continue
         try:
-            answer = input(f"Output folder already exists: {out_dir}\nOverwrite it? [y/N]: ").strip().lower()
-        except EOFError:
-            print("No confirmation received. Exiting without changing the existing run.")
-            return False
-        if answer in {"y", "yes"}:
-            return True
-        if answer in {"", "n", "no"}:
-            print("Keeping the existing run. Exiting.")
-            return False
-        print("Please answer yes or no.")
+            obj = json.loads(line)
+        except json.JSONDecodeError as ex:
+            raise ValueError(f"Invalid JSONL at line {line_num}: {ex}") from ex
+        if not isinstance(obj.get("joke"), str) or not obj["joke"].strip():
+            raise ValueError(f"Line {line_num} is missing its joke text")
+        if not isinstance(obj.get("topics"), list) or not isinstance(obj.get("style"), str):
+            raise ValueError(f"Line {line_num} lacks topics or style metadata")
+        records.append(obj)
+    if len(records) < 20:
+        raise ValueError("Expected at least 20 curated jokes for train/validation")
+    return records
 
 
-def main() -> None:
-    """Prepare text, train/evaluate the model, and save its best checkpoint."""
-    args = parse_train_args()
-    torch.manual_seed(args.seed)
-    if args.device == "cuda":
-        torch.backends.cuda.matmul.allow_tf32 = True
-        torch.backends.cudnn.allow_tf32 = True
+def canonical_prefix(prompt: str) -> str:
+    """A user prompt whose following assistant text will be generated."""
+    return f"<|bos|><|user|>{prompt}<|assistant|>"
 
-    data_path = Path(args.data)
-    out_dir = Path(args.out_dir)
-    runtime_info = get_runtime_info(args.device)
-    log(f"Runtime info: {runtime_info}")
 
-    if not data_path.is_file():
-        raise FileNotFoundError(f"Data file not found: {data_path}")
-    if out_dir.is_symlink():
-        raise RuntimeError(f"Refusing to manage an output folder through a symbolic link: {out_dir}")
-    if out_dir.exists():
-        if not out_dir.is_dir():
-            raise FileExistsError(f"Output path exists and is not a folder: {out_dir}")
-        if not confirm_overwrite(out_dir):
-            return
-        shutil.rmtree(out_dir)
-    out_dir.mkdir(parents=True)
+def joke_id(n: int) -> str:
+    """Atomic identity token learned alongside each joke (not a lookup key)."""
+    return f"<|j{n:04d}|>"
 
-    text = data_path.read_text(encoding="utf-8")
-    all_examples = parse_conversations(text)
-    train_examples, val_examples = split_by_joke(all_examples, args.seed)
-    log(f"Parsed {len(all_examples):,} complete chat samples; split by unique jokes")
-    log("Training byte-level BPE tokenizer...")
-    # Training on a prefix speeds tokenizer construction; the model still sees
-    # the full encoded dataset below.
-    if args.bpe_train_chars > 0:
-        tokenizer_train_path = out_dir / "_tokenizer_train_sample.txt"
-        tokenizer_train_path.write_text(text[: args.bpe_train_chars], encoding="utf-8")
-    else:
-        tokenizer_train_path = data_path
 
-    tokenizer = JokeTokenizer.train_from_file(
-        tokenizer_train_path,
-        vocab_size=args.bpe_vocab_size,
-        min_frequency=args.bpe_min_pair_freq,
-        show_progress=True,
-    )
-    tokenizer.save(out_dir / "tokenizer.json")
-    if tokenizer_train_path.parent == out_dir:
-        tokenizer_train_path.unlink(missing_ok=True)
+def examples_for_record(record: dict, index: int, supported: set[str]):
+    """Pair the SAME full answer with generic, style, and topic prompts.
 
-    log("Encoding complete training/validation conversations...")
-    train_data, skipped_train = encode_conversations(train_examples, tokenizer, args.block_size)
-    val_data, skipped_val = encode_conversations(val_examples, tokenizer, args.block_size)
-    if not train_data or not val_data:
-        raise ValueError(
-            "No complete examples fit the context window in one split. "
-            "Increase --block_size or shorten the corpus examples."
-        )
-    log(
-        f"Usable conversations: train={len(train_data):,}, val={len(val_data):,}; "
-        f"skipped too long: train={skipped_train:,}, val={skipped_val:,}"
-    )
+    If the same joke were present under unrelated answers, the model could
+    blend its punchlines. Keeping one identity across prompts helps it learn a
+    stable continuation from the identifier it predicts first.
+    """
+    prompts = ["Tell me a joke."]
+    if record["style"] in STYLE_PROMPTS:
+        prompts.append(STYLE_PROMPTS[record["style"]])
+    for topic in record["topics"]:
+        if topic in supported:
+            prompts.append(topic_prompt(topic))
+    suffix = joke_id(index) + record["joke"].strip() + "<|eos|>"
+    for prompt in dict.fromkeys(prompts):
+        yield canonical_prefix(prompt), suffix
 
-    # Keep a copy with the run so the checkpoint remains interpretable.
-    shutil.copyfile(data_path, out_dir / "data_clean.txt")
 
-    config = GPTConfig(
-        vocab_size=tokenizer.vocab_size,
-        block_size=args.block_size,
-        n_layer=args.n_layer,
-        n_head=args.n_head,
-        n_embd=args.n_embd,
-        dropout=args.dropout,
-    )
-    model = GPT(config).to(args.device)
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
-    )
+def prepare_examples(records: list[dict], tokenizer: JokeTokenizer, block_size: int,
+                     supported: set[str]) -> tuple[list[tuple[torch.Tensor, torch.Tensor]], int]:
+    """Create fixed-length x/y tensors with loss only on assistant completion.
 
-    best_val_loss = float("inf")
-    best_step = None
-    log(f"Device: {args.device}")
-    pad_id = tokenizer.tokenizer.token_to_id("<|pad|>")
-    if pad_id is None:
-        raise ValueError("Tokenizer does not contain the padding token")
-    log(
-        f"Model configuration: parameters={sum(p.numel() for p in model.parameters()):,}; "
-        f"vocab={config.vocab_size:,}; context={config.block_size}; "
-        f"layers={config.n_layer}; heads={config.n_head}; embedding={config.n_embd}; "
-        f"dropout={config.dropout}; device={args.device}"
-    )
-    log(f"BPE vocabulary: {tokenizer.vocab_size:,}")
-    log(f"Train / validation conversations: {len(train_data):,} / {len(val_data):,}")
+    Targets use -100 for padding and user prompt positions, which PyTorch's
+    cross-entropy ignores. This prevents the model optimizing for repeating
+    the user prompt instead of producing complete jokes.
+    """
+    examples, skipped = [], 0
+    pad_id = tokenizer.token_id("<|pad|>")
+    for index, row in records:
+        for prefix, suffix in examples_for_record(row, index, supported):
+            full_ids = tokenizer.encode(prefix + suffix)
+            prefix_count = len(tokenizer.encode(prefix))
+            if len(full_ids) > block_size + 1:
+                skipped += 1
+                continue
+            x_ids = full_ids[:-1]
+            y_ids = full_ids[1:]
+            for k in range(max(0, prefix_count - 1)):
+                y_ids[k] = -100
+            n_pad = block_size - len(x_ids)
+            x_ids.extend([pad_id] * n_pad)
+            y_ids.extend([-100] * n_pad)
+            assert len(x_ids) == len(y_ids) == block_size
+            assert any(y >= 0 for y in y_ids)
+            examples.append((torch.tensor(x_ids), torch.tensor(y_ids)))
+    return examples, skipped
 
-    for step in range(args.max_iters + 1):
-        if step % args.eval_interval == 0:
-            losses = estimate_loss(
-                model, train_data, val_data, args.batch_size, args.block_size,
-                pad_id, args.device, args.eval_iters,
-            )
-            log(
-                f"step {step}/{args.max_iters}: train loss {losses['train']:.4f}, "
-                f"validation loss {losses['val']:.4f}"
-            )
-            if losses["val"] < best_val_loss:
-                best_val_loss = losses["val"]
-                best_step = step
-                save_checkpoint(out_dir, model, config, args, best_val_loss)
 
-        # Each sampled x window is paired with y shifted one token to the right.
-        x, y = sample_batch(train_data, args.batch_size, args.block_size, pad_id, args.device)
-        _, loss = model(x, y)
-        optimizer.zero_grad(set_to_none=True)
-        loss.backward()
-        if args.grad_clip > 0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
-        optimizer.step()
+def batch_from_examples(samples, batch_size: int, device: str):
+    """Sample complete joke conversations; never cross sample boundaries."""
+    indices = torch.randint(0, len(samples), (batch_size,)).tolist()
+    x = torch.stack([samples[i][0] for i in indices]).to(device)
+    y = torch.stack([samples[i][1] for i in indices]).to(device)
+    return x, y
 
-    save_config_to_file(
-        args, data_path, out_dir, runtime_info, text, tokenizer,
-        train_data, val_data, skipped_train, skipped_val, config, best_val_loss, best_step,
-    )
-    log(f"Training complete. Best validation loss: {best_val_loss:.4f} at step {best_step}.")
-    log(
-        f"Saved model configuration: {sum(p.numel() for p in model.parameters()):,} parameters, "
-        f"{config.n_layer} layers, {config.n_head} heads, {config.n_embd} embedding width, "
-        f"{config.block_size} context, {config.vocab_size} vocabulary, "
-        f"dropout={config.dropout}; checkpoint step={best_step}"
-    )
-    log(f"Saved model, tokenizer, config, and data copy to: {out_dir}")
+
+def completion_loss(model: GPT, x: torch.Tensor, y: torch.Tensor,
+                    id_loss_weight: float = 5.0) -> torch.Tensor:
+    """Weighted next-token loss on joke identity, body, and EOS.
+
+    The first unmasked target is the joke identity. Giving it more weight
+    helps the model learn the topic-to-identity association instead of
+    spending nearly all gradient signal on common joke-body words.
+    """
+    logits, _ = model(x)
+    per_token = F.cross_entropy(
+        logits.reshape(-1, logits.shape[-1]), y.reshape(-1),
+        ignore_index=-100, reduction="none",
+    ).view_as(y)
+    valid = y != -100
+    first_completion = valid & (valid.long().cumsum(dim=1) == 1)
+    weights = valid.float() + (id_loss_weight - 1.0) * first_completion.float()
+    return (per_token * weights).sum() / weights.sum().clamp_min(1)
+
 
 
 @torch.no_grad()
-def estimate_loss(model, train_data, val_data, batch_size, block_size, pad_id, device, eval_iters):
-    """Evaluate assistant-only cross-entropy on complete held-out jokes."""
+def estimate_loss(model: GPT, samples, steps: int, batch_size: int, device: str, id_loss_weight: float):
     model.eval()
-    result = {}
-    for split, data in (("train", train_data), ("val", val_data)):
-        losses = torch.zeros(eval_iters)
-        for i in range(eval_iters):
-            x, y = sample_batch(data, batch_size, block_size, pad_id, device)
-            _, loss = model(x, y)
-            losses[i] = loss.item()
-        result[split] = losses.mean().item()
+    numbers = []
+    for _ in range(steps):
+        x, y = batch_from_examples(samples, batch_size, device)
+        numbers.append(completion_loss(model, x, y, id_loss_weight).item())
     model.train()
-    return result
+    return sum(numbers) / len(numbers)
 
 
-def save_checkpoint(out_dir: Path, model: GPT, config: GPTConfig, args, best_val_loss: float) -> None:
-    """Save learned tensors plus enough configuration to reconstruct GPT."""
-    torch.save(model.state_dict(), out_dir / "model.pt")
-    payload = {
-        "model": asdict(config),
-        "training": vars(args),
-        "best_val_loss": best_val_loss,
-    }
-    (out_dir / "config.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+def choose_device(device: str) -> str:
+    if device == "auto":
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("CUDA was requested but is unavailable")
+    return device
 
 
-def save_config_to_file(
-    args, data_path, out_dir, runtime_info, text, tokenizer,
-    train_data, val_data, skipped_train, skipped_val, config, best_val_loss, best_step,
-) -> None:
-    """Write final provenance and training statistics to config.json."""
-    dataset_stats = {
-        "raw_chars": len(text),
-        "total_conversations": len(train_data) + len(val_data) + skipped_train + skipped_val,
-        "train_conversations": len(train_data),
-        "val_conversations": len(val_data),
-        "train_skipped_over_context": skipped_train,
-        "val_skipped_over_context": skipped_val,
-        "split_strategy": "grouped_by_distinct_joke_to_prevent_prompt_variant_leakage",
-        "loss_scope": "assistant_tokens_including_eos",
-    }
-    payload = build_config_payload(
-        args, config, tokenizer, data_path, out_dir, dataset_stats,
-        runtime_info, best_val_loss, best_step, status="finished",
-    )
-    save_config(out_dir, payload)
-
-
-def build_config_payload(
-    args, model_config: GPTConfig, tokenizer: JokeTokenizer,
-    data_path: Path, out_dir: Path, dataset_stats: dict, runtime_info: dict,
-    best_val_loss: float | None = None, best_step: int | None = None,
-    status: str = "initialized",
-) -> dict:
-    """Create the structured run record read by chat and useful for auditing."""
-    return {
-        "status": status,
-        "paths": {
-            "data": str(data_path), "out_dir": str(out_dir),
-            "model_file": str(out_dir / "model.pt"),
-            "tokenizer_file": str(out_dir / "tokenizer.json"),
-            "config_file": str(out_dir / "config.json"),
-            "copied_clean_data_file": str(out_dir / "data_clean.txt"),
-        },
-        "model": asdict(model_config),
-        "tokenizer": {
-            "type": "huggingface_tokenizers_byte_level_bpe",
-            "vocab_size": tokenizer.vocab_size,
-            "requested_vocab_size": args.bpe_vocab_size,
-            "min_pair_freq": args.bpe_min_pair_freq,
-            "train_chars": args.bpe_train_chars,
-            "special_tokens": tokenizer.SPECIAL_TOKENS,
-        },
-        "training": {
-            key: getattr(args, key) for key in (
-                "data", "out_dir", "block_size", "batch_size", "max_iters",
-                "eval_interval", "eval_iters", "learning_rate", "weight_decay",
-                "grad_clip", "seed", "device", "n_layer", "n_head", "n_embd",
-                "dropout", "bpe_vocab_size", "bpe_min_pair_freq", "bpe_train_chars",
-            )
-        },
-        "dataset": dataset_stats,
-        "checkpoint": {"best_val_loss": best_val_loss, "best_step": best_step},
-        "runtime": runtime_info,
-    }
-
-
-def save_config(out_dir: Path, payload: dict) -> None:
-    """Write the complete run record as readable UTF-8 JSON."""
-    (out_dir / "config.json").write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-
-
-def get_runtime_info(device: str) -> dict:
-    """Capture Python, platform, PyTorch, and available NVIDIA device details."""
-    info = {
-        "created_at": datetime.now().isoformat(timespec="seconds"),
-        "python_version": platform.python_version(),
-        "platform": platform.platform(),
-        "torch_version": torch.__version__,
-        "cuda_available": torch.cuda.is_available(),
-        "device": device,
-    }
-    if torch.cuda.is_available():
-        info["cuda_device_name"] = torch.cuda.get_device_name(0)
-        info["cuda_device_count"] = torch.cuda.device_count()
-    return info
-
-
-def normalize_device(device: str) -> str:
-    """Resolve the ``gpu`` alias and apply the common auto/CUDA selection."""
-    return choose_device("cuda" if device.lower() == "gpu" else device.lower())
-
-
-def apply_device_defaults(args):
-    """Fill unset hyperparameters from the selected CPU or CUDA preset."""
-    defaults = GPU_DEFAULTS if args.device == "cuda" else CPU_DEFAULTS
-    for key, value in defaults.items():
-        if getattr(args, key) is None:
-            setattr(args, key, value)
+def parse_args():
+    p = argparse.ArgumentParser(description="Train a topic-conditioned joke GPT from scratch")
+    p.add_argument("--data", default="data/jokes_clean.jsonl")
+    p.add_argument("--topics", default="data/topics.json")
+    p.add_argument("--out_dir", default="models/jokes_v2")
+    p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
+    p.add_argument("--max_iters", type=int, default=None)
+    p.add_argument("--batch_size", type=int, default=None)
+    p.add_argument("--block_size", type=int, default=256)
+    p.add_argument("--n_layer", type=int, default=None)
+    p.add_argument("--n_head", type=int, default=4)
+    p.add_argument("--n_embd", type=int, default=None)
+    p.add_argument("--dropout", type=float, default=0.1)
+    p.add_argument("--bpe_vocab_size", type=int, default=4500)
+    p.add_argument("--learning_rate", type=float, default=3e-4)
+    p.add_argument("--id_loss_weight", type=float, default=5.0)
+    p.add_argument("--weight_decay", type=float, default=0.05)
+    p.add_argument("--eval_interval", type=int, default=200)
+    p.add_argument("--eval_iters", type=int, default=8)
+    p.add_argument("--min_topic_examples", type=int, default=10)
+    p.add_argument("--val_fraction", type=float, default=0.05)
+    p.add_argument("--seed", type=int, default=1337)
+    p.add_argument("--overwrite", action="store_true")
+    args = p.parse_args()
+    args.device = choose_device(args.device)
+    if args.n_layer is None:
+        args.n_layer = 5 if args.device == "cuda" else 3
+    if args.n_embd is None:
+        args.n_embd = 320 if args.device == "cuda" else 192
+    if args.batch_size is None:
+        args.batch_size = 24 if args.device == "cuda" else 8
+    if args.max_iters is None:
+        args.max_iters = 12000 if args.device == "cuda" else 3000
+    if args.id_loss_weight < 1:
+        p.error("id_loss_weight must be at least 1")
+    if args.n_embd % args.n_head:
+        p.error("n_embd must be divisible by n_head")
+    if not (0 < args.val_fraction < 0.25):
+        p.error("val_fraction must be between 0 and 0.25")
     return args
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    """Define the data, device, tokenizer, model, and optimizer options."""
-    parser = argparse.ArgumentParser(description="Train the sampleJokesGPT chatbot.")
-    parser.add_argument("--data", default="data/clean_data.txt")
-    parser.add_argument("--out_dir", default="models/jokes_bpe")
-    parser.add_argument(
-        "--device", default="auto", choices=["auto", "cpu", "cuda", "gpu"],
-        help="auto selects CUDA when available, otherwise CPU; gpu aliases cuda",
+def main():
+    args = parse_args()
+    torch.manual_seed(args.seed)
+    random.seed(args.seed)
+    source = Path(args.data)
+    records = load_records(source)
+    topics_config = json.loads(Path(args.topics).read_text(encoding="utf-8"))
+    counts = Counter(t for r in records for t in set(r["topics"]))
+    supported = {name for name, cnt in counts.items()
+                 if cnt >= args.min_topic_examples
+                 and name in topics_config["topic_keyword_patterns"]}
+    rng = random.Random(args.seed)
+    indexed = list(enumerate(records))
+    rng.shuffle(indexed)
+    cut = max(1, int(len(indexed) * args.val_fraction))
+    validation_rows, train_rows = indexed[:cut], indexed[cut:]
+    train_ids = [joke_id(idx) for idx, _ in train_rows]
+    val_ids = [joke_id(idx) for idx, _ in validation_rows]
+
+    out = Path(args.out_dir)
+    if out.exists():
+        if not args.overwrite:
+            response = input(f"Replace existing model folder {out}? [y/N]: ").strip().lower()
+            if response not in {"y", "yes"}:
+                print("Existing checkpoint left unchanged")
+                return
+        if out.is_symlink() or not out.is_dir():
+            raise RuntimeError("Refusing to delete a symlink or a non-directory output")
+        shutil.rmtree(out)
+    out.mkdir(parents=True)
+
+    print(f"Source: {len(records)} curated jokes, {len(supported)} supported subjects")
+    # Train tokenizer on the prompts and jokes used by this run. Validation
+    # records are allowed to influence BPE segmentation, not model weights.
+    tokenizer_text = out / "tokenizer_corpus.tmp"
+    with tokenizer_text.open("w", encoding="utf-8") as stream:
+        for index, record in indexed:
+            for pre, answer in examples_for_record(record, index, supported):
+                stream.write(pre + answer + "\n")
+    tokenizer = JokeTokenizer.train_from_file(
+        tokenizer_text, vocab_size=args.bpe_vocab_size,
+        extra_special_tokens=train_ids + val_ids,
     )
-    parser.add_argument("--bpe_vocab_size", type=int, default=None)
-    parser.add_argument("--bpe_min_pair_freq", type=int, default=None)
-    parser.add_argument("--bpe_train_chars", type=int, default=None)
-    parser.add_argument("--block_size", type=int, default=None)
-    parser.add_argument("--batch_size", type=int, default=None)
-    parser.add_argument("--max_iters", type=int, default=None)
-    parser.add_argument("--eval_interval", type=int, default=None)
-    parser.add_argument("--eval_iters", type=int, default=None)
-    parser.add_argument("--learning_rate", type=float, default=None)
-    parser.add_argument("--weight_decay", type=float, default=None)
-    parser.add_argument("--grad_clip", type=float, default=None)
-    parser.add_argument("--n_layer", type=int, default=None)
-    parser.add_argument("--n_head", type=int, default=None)
-    parser.add_argument("--n_embd", type=int, default=None)
-    parser.add_argument("--dropout", type=float, default=None)
-    parser.add_argument("--seed", type=int, default=1337)
-    return parser
+    tokenizer.save(out / "tokenizer.json")
+    tokenizer_text.unlink()
+    train_samples, skipped_train = prepare_examples(train_rows, tokenizer, args.block_size, supported)
+    val_samples, skipped_val = prepare_examples(validation_rows, tokenizer, args.block_size, supported)
+    if not train_samples or not val_samples:
+        raise ValueError("No usable training or validation examples; increase --block_size")
 
-
-def parse_train_args():
-    """Parse command-line options and resolve device-specific defaults."""
-    args = build_arg_parser().parse_args()
-    args.device = normalize_device(args.device)
-    return apply_device_defaults(args)
-
-
-def log(message: str) -> None:
-    """Print one concise training status line with a local timestamp."""
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
-
-
-def get_device() -> str:
-    """Return CUDA if PyTorch can use it, or CPU otherwise."""
-    return "cuda" if torch.cuda.is_available() else "cpu"
+    config = GPTConfig(
+        vocab_size=tokenizer.vocab_size, block_size=args.block_size,
+        n_layer=args.n_layer, n_head=args.n_head,
+        n_embd=args.n_embd, dropout=args.dropout,
+    )
+    model = GPT(config).to(args.device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate,
+                                  weight_decay=args.weight_decay)
+    data_hash = hashlib.sha256(source.read_bytes()).hexdigest()
+    info = {
+        "model": asdict(config),
+        "training": vars(args),
+        "dataset": {"source_sha256": data_hash, "records": len(records),
+                    "training_records": len(train_rows), "validation_records": len(validation_rows),
+                    "train_examples": len(train_samples), "validation_examples": len(val_samples),
+                    "skipped_too_long": skipped_train + skipped_val},
+        "routing": {"topic_patterns": {t: topics_config["topic_keyword_patterns"][t]
+                                       for t in sorted(supported)},
+                    "topic_counts": {t: counts[t] for t in sorted(supported)}},
+        "train_joke_id_tokens": train_ids,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "selection_note": "Train loss selects checkpoints to favor coherent memorized jokes; held-out loss measures generalization separately.",
+    }
+    (out / "config.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+    best_train = float("inf")
+    print(f"Device: {args.device}; vocab: {tokenizer.vocab_size}; "
+          f"train/val sequences: {len(train_samples)}/{len(val_samples)}")
+    print("Training a generative model. The dataset is NOT needed at inference.")
+    for step in range(args.max_iters + 1):
+        if step % args.eval_interval == 0 or step == args.max_iters:
+            train_loss = estimate_loss(model, train_samples, args.eval_iters, args.batch_size, args.device, args.id_loss_weight)
+            val_loss = estimate_loss(model, val_samples, args.eval_iters, args.batch_size, args.device, args.id_loss_weight)
+            print(f"step {step:5d}: completion train loss={train_loss:.3f} val loss={val_loss:.3f}", flush=True)
+            if train_loss < best_train:
+                best_train = train_loss
+                torch.save(model.state_dict(), out / "model.pt")
+                info["checkpoint"] = {"step": step, "train_loss": train_loss, "val_loss": val_loss}
+                (out / "config.json").write_text(json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8")
+        if step == args.max_iters:
+            break
+        x, y = batch_from_examples(train_samples, args.batch_size, args.device)
+        optimizer.zero_grad(set_to_none=True)
+        loss = completion_loss(model, x, y, args.id_loss_weight)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        optimizer.step()
+    print("Finished. Inference needs only config.json, tokenizer.json, and model.pt")
 
 
 if __name__ == "__main__":

@@ -1,96 +1,65 @@
-"""Shared topic vocabulary and weak, transparent corpus labels.
+"""Convert natural-language joke requests into the training topic vocabulary.
 
-Labels are keyword heuristics, not semantic understanding. Keep the patterns
-specific enough that 'python' as an animal, or 'bug' as an insect, does not
-automatically become a programming joke. Topic classification remains noisy.
+Topic routing reads a *taxonomy*, never a collection of jokes. No retrieval is
+performed. The same topic name is used in training and inference so the GPT
+can learn its association with joke completions (FMg Part IV: conditioning).
 """
-
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 
-GENERAL_PROMPTS = ("Tell me a joke.", "Make me laugh.", "Tell me another joke.")
-
-TOPIC_VARIANTS = {
-    "programming": (
-        "Tell me a joke about programming.",
-        "Tell me a programming joke.",
-        "Make me laugh about programmers.",
-        "Tell me a joke about coding.",
-    ),
-    "teacher": (
-        "Tell me a joke about teachers.",
-        "Tell me a teacher joke.",
-        "Make me laugh about school.",
-    ),
-    "animal": (
-        "Tell me a joke about animals.",
-        "Tell me an animal joke.",
-        "Make me laugh about animals.",
-    ),
-    "children": (
-        "Tell me a joke about children.",
-        "Tell me a joke about kids.",
-        "Make me laugh about children.",
-    ),
-    "work": (
-        "Tell me a joke about work.",
-        "Tell me an office joke.",
-        "Make me laugh about my job.",
-    ),
-}
-
-TOPIC_PROMPTS = {topic: prompts[0] for topic, prompts in TOPIC_VARIANTS.items()}
-
-TOPIC_PATTERNS = {
-    "programming": re.compile(
-        r"\b(programmer|programmers|programming|developer|developers|"
-        r"coding|coded|computer|computers|software|javascript|keyboard|"
-        r"server|servers|website|websites|algorithm|algorithms|"
-        r"compile|compiler|debugging|git|github|database|databases)\b",
-        re.IGNORECASE,
-    ),
-    "teacher": re.compile(
-        r"\b(teacher|teachers|school|schools|classroom|classrooms|"
-        r"student|students|professor|professors|principal|homework|"
-        r"report card|exam|exams)\b",
-        re.IGNORECASE,
-    ),
-    "animal": re.compile(
-        r"\b(animal|animals|cat|cats|kitten|kittens|dog|dogs|"
-        r"puppy|puppies|bird|birds|fish|horse|horses|cow|cows|"
-        r"pig|pigs|duck|ducks|chicken|chickens|bear|bears|"
-        r"rabbit|rabbits|mouse|mice|frog|frogs|snake|snakes|"
-        r"lion|lions|elephant|elephants|monkey|monkeys|"
-        r"tiger|tigers|zebra|zebras|giraffe|giraffes)\b",
-        re.IGNORECASE,
-    ),
-    "children": re.compile(
-        r"\b(child|children|kid|kids|baby|babies|toddler|toddlers|"
-        r"parent|parents|son|daughter|sons|daughters)\b",
-        re.IGNORECASE,
-    ),
-    "work": re.compile(
-        r"\b(work|working|workplace|office|offices|boss|bosses|"
-        r"employee|employees|coworker|coworkers|colleague|colleagues|"
-        r"manager|managers|meeting|meetings|salary|job|jobs)\b",
-        re.IGNORECASE,
-    ),
-}
+@dataclass(frozen=True)
+class JokeRequest:
+    """A canonical training prompt plus the detected domain, if supported."""
+    prompt: str
+    topic: str | None
+    keyword: str | None
 
 
-def detect_topics(text: str) -> list[str]:
-    """Find all explicitly mentioned categories, ordered by dictionary priority."""
-    return [topic for topic, pattern in TOPIC_PATTERNS.items() if pattern.search(text)]
+def topic_prompt(topic: str) -> str:
+    """Build exactly the same prompt in training and interactive inference."""
+    return f"Tell me a joke about {topic.replace('_', ' and ')}."
 
 
-def detect_requested_topic(text: str) -> str | None:
-    """Find one topic in the request; prefer later, explicitly topical phrases.
+def topic_matches(text: str, pattern: str) -> bool:
+    """Check a label's lexical pattern against text with word boundaries."""
+    return re.search(r"\b(?:" + pattern + r")\b", text, re.IGNORECASE) is not None
 
-    Requests containing multiple categories remain ambiguous and choose the
-    first detected category. The returned topic is only a coarse routing hint.
+
+def route_request(text: str, topic_patterns: dict[str, str]) -> JokeRequest:
+    """Pick the strongest known topic named in the user's request.
+
+    This lightweight lexical classifier is intentionally transparent. It can
+    confuse polysemous words (e.g. a software bug vs. an insect); a model-based
+    intent classifier would be a separate, more advanced system.
     """
-
-    matches = detect_topics(text)
-    return matches[0] if matches else None
+    lower = text.lower()
+    # Content after "about" or "on" is usually more informative than "joke".
+    match = re.search(r"\b(?:about|on)\s+(.+)", lower)
+    focus = match.group(1) if match else lower
+    candidates = []
+    for topic, pattern in topic_patterns.items():
+        found = re.search(r"\b(?:" + pattern + r")\b", focus, re.IGNORECASE)
+        if found:
+            candidates.append((len(found.group()), -found.start(), topic))
+    if not candidates and focus != lower:
+        for topic, pattern in topic_patterns.items():
+            found = re.search(r"\b(?:" + pattern + r")\b", lower, re.IGNORECASE)
+            if found:
+                candidates.append((len(found.group()), -found.start(), topic))
+    if candidates:
+        candidates.sort(reverse=True)
+        _, _, topic = candidates[0]
+        # Record the actual matched phrase, useful for ranking generated jokes.
+        matched = re.search(r"\b(?:" + topic_patterns[topic] + r")\b", focus, re.IGNORECASE)
+        keyword = matched.group().lower() if matched else None
+        return JokeRequest(topic_prompt(topic), topic, keyword)
+    if re.search(r"\b(?:pun|puns|punny)\b", lower):
+        return JokeRequest("Tell me a pun.", None, None)
+    if re.search(r"\b(?:dad joke|dad jokes|groaner)\b", lower):
+        return JokeRequest("Tell me a dad joke.", None, None)
+    if re.search(r"\b(?:one[- ]liner|short joke)\b", lower):
+        return JokeRequest("Tell me a one-liner.", None, None)
+    return JokeRequest("Tell me a joke.", None, None)

@@ -1,229 +1,220 @@
-"""Interactive joke chatbot with candidate generation and simple ranking.
+"""A joke chatbot that generates from neural weights, without retrieval.
 
-The model generates continuations from a serialized user/assistant prompt.
-This script handles the surrounding conversation, device selection, stopping
-at chat markers, and a lightweight heuristic that chooses among samples.
+The decoder first predicts an atomic joke identifier, then generates its text
+one token at a time until <|eos|>. The identifier is learned like any other
+vocabulary token; it is NEVER used to fetch a joke from a dataset or index.
 """
-
 from __future__ import annotations
 
 import argparse
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
-from .topics import TOPIC_PROMPTS, detect_requested_topic, detect_topics
+from .topics import JokeRequest, route_request, topic_matches
+
+
+@dataclass
+class Candidate:
+    text: str
+    finished: bool
+    topic_match: bool
+    keyword_match: bool
 
 
 def choose_device(requested: str) -> torch.device:
-    """Choose CUDA automatically when available, otherwise CPU; validate CUDA."""
     if requested == "auto":
         requested = "cuda" if torch.cuda.is_available() else "cpu"
     if requested == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("--device cuda was requested, but CUDA is not available.")
+        raise RuntimeError("CUDA was requested but is unavailable")
     return torch.device(requested)
 
 
-def detect_intent(user_text: str) -> str:
-    """Map a request to the general or topic prompt used by the cleaner."""
-    return detect_requested_topic(user_text) or "general"
-
-
-def build_prompt(user_text: str) -> str:
-    """Build the training-compatible chat prefix for the detected joke type."""
-    intent = detect_intent(user_text)
-    request = TOPIC_PROMPTS.get(intent, "Tell me a joke.")
-    return f"<|bos|>\n<|user|>{request}\n<|assistant|>\n"
-
-
-def extract_answer(full_text: str) -> str:
-    """Keep only generated assistant text before the next chat boundary."""
-    text = full_text.split("<|assistant|>", 1)[-1]
-    for marker in ("<|eos|>", "<|bos|>", "<|user|>", "<|assistant|>"):
-        text = text.split(marker, 1)[0]
-    return re.sub(r"\n{3,}", "\n\n", text.strip())
-
-
-def has_repetition(text: str) -> bool:
-    """Detect repeated word n-grams that often indicate a broken generation."""
-    words = text.lower().split()
-    if len(words) < 10:
-        return False
-    for size in (2, 3, 4):
-        chunks = [tuple(words[i : i + size]) for i in range(len(words) - size + 1)]
-        if len(chunks) != len(set(chunks)):
-            return True
-    return False
-
-
-def is_good_joke(text: str) -> bool:
-    """Filter empty, overlong, repetitive, or unclosed-marker candidates."""
-    return (
-        20 <= len(text) <= 450
-        and "<|" not in text
-        and "|>" not in text
-        and not has_repetition(text)
-        and len(set(text)) >= 8
-    )
-
-
-def score_joke(text: str) -> float:
-    """Prefer reasonably sized and structurally readable candidate answers.
-
-    This is NOT a judge of humor, grammatical coherence, or punchline quality.
-    """
-    score = 0.0
-    length = len(text)
-    if 50 <= length <= 220:
-        score += 3.0
-    if "?" in text:
-        score += 2.0
-    if "." in text or "!" in text:
-        score += 1.0
-    if "\n" in text:
-        score += 0.5
-    if has_repetition(text):
-        score -= 5.0
-    if length > 300:
-        score -= 2.0
-    return score
+def load_model(path: Path, device: torch.device):
+    """Load only weights, BPE vocabulary, and routing metadata (no jokes)."""
+    cfg = json.loads((path / "config.json").read_text(encoding="utf-8"))
+    tokenizer = JokeTokenizer.load(path / "tokenizer.json")
+    model = GPT(GPTConfig(**cfg["model"])).to(device)
+    model.load_state_dict(torch.load(path / "model.pt", map_location=device, weights_only=True))
+    model.eval()
+    ids = [tokenizer.token_id(token) for token in cfg["train_joke_id_tokens"]]
+    if not ids:
+        raise ValueError("Checkpoint contains no learned joke identities")
+    return model, tokenizer, cfg, ids
 
 
 @torch.no_grad()
-def generate_one(
-    model: GPT, tokenizer: JokeTokenizer, prompt: str, device: torch.device,
-    max_new_tokens: int, temperature: float, top_k: int,
-) -> str:
-    """Sample one response and remove the serialized chat prefix and markers."""
-    ids = tokenizer.encode(prompt)
-    x = torch.tensor([ids], dtype=torch.long, device=device)
-    eos_id = tokenizer.tokenizer.token_to_id("<|eos|>")
-    if eos_id is None:
-        raise ValueError("Tokenizer is missing <|eos|>.")
-    generated = model.generate(
-        x, max_new_tokens=max_new_tokens, temperature=temperature,
-        top_k=top_k, eos_token_id=eos_id,
-    )
-    full_text = tokenizer.decode(generated[0].tolist(), skip_special_tokens=False)
-    return extract_answer(full_text)
+def next_token_logits(model: GPT, history: torch.Tensor) -> torch.Tensor:
+    """Predict the next-token distribution from a causal context window."""
+    logits, _ = model(history[:, -model.config.block_size:])
+    return logits[0, -1, :]
 
 
-def generate_best(
-    model: GPT, tokenizer: JokeTokenizer, prompt: str, device: torch.device,
-    attempts: int, max_new_tokens: int, temperature: float, top_k: int,
-    topic: str | None = None, recent: set[str] | None = None,
-) -> str:
-    """Generate multiple completions; optionally require a visible topic cue.
+def sample_from_logits(logits: torch.Tensor, temperature: float, top_k: int) -> int:
+    """Sample one token or use greedy decoding when temperature is zero."""
+    if temperature <= 0:
+        return int(torch.argmax(logits).item())
+    logits = logits / temperature
+    if 0 < top_k < logits.numel():
+        cutoff = torch.topk(logits, top_k).values[-1]
+        logits = logits.masked_fill(logits < cutoff, -float("inf"))
+    return int(torch.multinomial(F.softmax(logits, dim=-1), 1).item())
 
-    No training-joke retrieval is performed. Word-based relevance checks can
-    reject subtle jokes and still accept irrelevant ones; they are only a
-    transparent first-pass safeguard against obviously off-topic responses.
+
+@torch.no_grad()
+def generate_candidate(model: GPT, tokenizer: JokeTokenizer, prompt: str,
+                       allowed_joke_ids: list[int], device: torch.device,
+                       id_temperature: float, body_temperature: float,
+                       max_new_tokens: int, top_k: int) -> tuple[str, bool]:
+    """Sample a learned identity first, then generate its complete wording.
+
+    Constraining the first generated token to a *learned identity token* is a
+    vocabulary constraint, not retrieval: neither a joke file nor a table of
+    joke texts is loaded. The rest of the answer is produced by the Transformer.
     """
-    if attempts < 1:
-        raise ValueError("attempts must be at least 1.")
-    candidates = []
-    for _ in range(attempts):
-        joke = generate_one(model, tokenizer, prompt, device, max_new_tokens, temperature, top_k)
-        if not is_good_joke(joke):
-            continue
-        if recent and joke.casefold() in recent:
-            continue
-        if topic is not None and topic not in detect_topics(joke):
-            continue
-        candidates.append(joke)
-    if not candidates:
-        if topic is not None:
-            return f"I couldn't generate a relevant joke about {topic}. Try again."
-        return "I could not generate a complete joke. Try again."
-    return max(candidates, key=score_joke)
+    prefix = f"<|bos|><|user|>{prompt}<|assistant|>"
+    history = torch.tensor([tokenizer.encode(prefix)], dtype=torch.long, device=device)
+    choices = next_token_logits(model, history)[allowed_joke_ids]
+    choice = sample_from_logits(choices, id_temperature, min(top_k, len(allowed_joke_ids)))
+    identity_id = allowed_joke_ids[choice]
+    history = torch.cat((history, torch.tensor([[identity_id]], device=device)), dim=1)
+
+    eos_id = tokenizer.token_id("<|eos|>")
+    invalid_tokens = {tokenizer.token_id(tok) for tok in
+                      ("<|bos|>", "<|user|>", "<|assistant|>", "<|pad|>", "<|unk|>")}
+    invalid_tokens.update(allowed_joke_ids)
+    generated = []
+    for _ in range(max_new_tokens):
+        logits = next_token_logits(model, history)
+        next_id = sample_from_logits(logits, body_temperature, top_k)
+        if next_id == eos_id:
+            return tokenizer.decode(generated, skip_special_tokens=False).strip(), True
+        if next_id in invalid_tokens:
+            return tokenizer.decode(generated, skip_special_tokens=False).strip(), False
+        generated.append(next_id)
+        history = torch.cat((history, torch.tensor([[next_id]], device=device)), dim=1)
+    return tokenizer.decode(generated, skip_special_tokens=False).strip(), False
 
 
-def load_model(model_dir: Path, device: torch.device) -> tuple[GPT, JokeTokenizer]:
-    """Load a saved architecture, weights, and matching tokenizer onto device."""
-    config_path = model_dir / "config.json"
-    model_path = model_dir / "model.pt"
-    tokenizer_path = model_dir / "tokenizer.json"
-    for path in (config_path, model_path, tokenizer_path):
-        if not path.is_file():
-            raise FileNotFoundError(f"Missing checkpoint file: {path}")
+def is_complete_joke(text: str, finished: bool) -> bool:
+    """Reject truncated, repetitive, suspiciously short and broken answers."""
+    if not finished or not (20 <= len(text) <= 450) or "<|" in text:
+        return False
+    words = re.findall(r"\b\w+\b", text.lower())
+    if len(words) < 5:
+        return False
+    tetragrams = list(zip(words, words[1:], words[2:], words[3:]))
+    if len(tetragrams) > len(set(tetragrams)) + 1:
+        return False
+    return True
 
-    config_data = json.loads(config_path.read_text(encoding="utf-8"))
-    model = GPT(GPTConfig(**config_data["model"])).to(device)
-    tokenizer = JokeTokenizer.load(tokenizer_path)
-    # Checkpoints contain tensor state only; weights_only avoids unpickling
-    # arbitrary Python objects when loading the user-selected model folder.
-    state = torch.load(model_path, map_location=device, weights_only=True)
-    model.load_state_dict(state)
-    model.eval()
-    checkpoint = config_data.get("checkpoint", {})
-    print(
-        "Loaded model: "
-        f"{sum(p.numel() for p in model.parameters()):,} parameters | "
-        f"{model.config.n_layer} layers | "
-        f"{model.config.n_head} heads | "
-        f"embedding {model.config.n_embd} | "
-        f"context {model.config.block_size} | "
-        f"vocab {model.config.vocab_size} | "
-        f"dropout {model.config.dropout} | device {device}"
-    )
-    if checkpoint:
-        print(
-            f"Checkpoint: step {checkpoint.get('best_step', '?')}, "
-            f"validation loss {checkpoint.get('best_val_loss', '?')}"
+
+def keyword_matches(text: str, keyword: str | None) -> bool:
+    if keyword is None:
+        return False
+    stem = keyword.lower().rstrip("s") if len(keyword) > 4 else keyword.lower()
+    return re.search(r"\b" + re.escape(stem) + r"\w*\b", text, re.IGNORECASE) is not None
+
+
+def quality_score(candidate: Candidate, requested: JokeRequest) -> float:
+    """Favor literal keyword evidence, then topical evidence and readability."""
+    score = 0.0
+    if requested.topic:
+        score += 10 if candidate.keyword_match else 0
+        score += 5 if candidate.topic_match else 0
+    if "?" in candidate.text:
+        score += 1
+    if candidate.text.endswith((".", "!", "?", "\"", "'")):
+        score += 1
+    if 35 <= len(candidate.text) <= 250:
+        score += 1
+    return score
+
+
+def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
+                  joke_ids: list[int], device: torch.device, request: str,
+                  attempts: int, max_new_tokens: int, id_temperature: float,
+                  body_temperature: float, top_k: int) -> tuple[str, str]:
+    """Try multiple neural generations; prefer complete on-topic answers."""
+    topic_patterns = cfg["routing"]["topic_patterns"]
+    intent = route_request(request, topic_patterns)
+    candidates: list[Candidate] = []
+    for attempt in range(attempts):
+        # A little randomness in later attempts can repair rigid, broken loops.
+        temp = body_temperature if attempt < attempts // 2 else max(body_temperature, 0.25)
+        text, finished = generate_candidate(
+            model, tokenizer, intent.prompt, joke_ids, device,
+            id_temperature, temp, max_new_tokens, top_k,
         )
-    return model, tokenizer
+        if not is_complete_joke(text, finished):
+            continue
+        item = Candidate(
+            text=text, finished=True,
+            topic_match=(topic_matches(text, topic_patterns[intent.topic]) if intent.topic else False),
+            keyword_match=keyword_matches(text, intent.keyword),
+        )
+        candidates.append(item)
+        # Returning a valid joke immediately avoids many expensive decoder
+        # steps, especially on CPU (the educational model has no KV cache).
+        if not intent.topic:
+            return item.text, "general"
+        if item.keyword_match and item.topic_match:
+            return item.text, "topic"
+    if not candidates:
+        return "I couldn't generate a complete joke. Try again.", "incomplete"
+    if intent.topic:
+        matches = [item for item in candidates if item.topic_match]
+        if matches:
+            selected = max(matches, key=lambda item: quality_score(item, intent))
+            return selected.text, "topic"
+        # Unrelated joke is an explicit, visible fallback, not a silent success.
+        selected = max(candidates, key=lambda item: quality_score(item, intent))
+        return "I couldn't find a good match, but here's another joke: " + selected.text, "fallback"
+    selected = max(candidates, key=lambda item: quality_score(item, intent))
+    return selected.text, "general"
 
 
-def build_arg_parser() -> argparse.ArgumentParser:
-    """Define checkpoint, device, sampling, and candidate-count options."""
-    parser = argparse.ArgumentParser(description="Chat with a trained joke GPT model.")
-    parser.add_argument("--model_dir", default="models/jokes_bpe")
-    parser.add_argument(
-        "--device", default="auto", choices=("auto", "cpu", "cuda"),
-        help="auto selects CUDA when available, otherwise CPU",
-    )
-    parser.add_argument("--attempts", type=int, default=20)
-    parser.add_argument("--max_new_tokens", type=int, default=180)
-    parser.add_argument("--temperature", type=float, default=0.75)
-    parser.add_argument("--top_k", type=int, default=40)
-    return parser
+def parse_args():
+    p = argparse.ArgumentParser(description="Chat with the joke GPT (no retrieval)")
+    p.add_argument("--model_dir", default="models/jokes_v2")
+    p.add_argument("--device", default="auto", choices=("auto", "cpu", "cuda"))
+    p.add_argument("--attempts", type=int, default=6)
+    p.add_argument("--max_new_tokens", type=int, default=240)
+    p.add_argument("--id_temperature", type=float, default=0.75)
+    p.add_argument("--temperature", type=float, default=0.0,
+                   help="Answer-body temperature; 0 favors a single learned full joke")
+    p.add_argument("--top_k", type=int, default=20)
+    return p.parse_args()
 
 
-def main() -> None:
-    """Load the checkpoint and serve joke requests until the user exits."""
-    args = build_arg_parser().parse_args()
+def main():
+    args = parse_args()
     device = choose_device(args.device)
-    model, tokenizer = load_model(Path(args.model_dir), device)
-    print(f"Joke GPT ready on {device}. Type 'exit' to quit.")
-
-    # ANSI colors apply to the labels only; input and generated text use the
-    # terminal's normal foreground color.
+    model, tokenizer, cfg, ids = load_model(Path(args.model_dir), device)
+    print(f"JokeGPT v2 ready on {device}. Types supported: "
+          f"{len(cfg['routing']['topic_patterns'])} topics. Type exit to quit.")
     you_label = "\033[96mYou:\033[0m"
     bot_label = "\033[93mJoke bot:\033[0m"
-    recent_answers: set[str] = set()
-
     while True:
-        user_text = input(f"\n{you_label} ").strip()
-        if user_text.lower() in {"exit", "quit", "q"}:
+        try:
+            query = input(f"\n{you_label} ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
             break
-        if not user_text:
-            print("Please enter a request, such as 'tell me a joke about teachers'.")
+        if query.lower() in {"exit", "quit", "q"}:
+            break
+        if not query:
             continue
-        topic = detect_intent(user_text)
-        answer = generate_best(
-            model, tokenizer, build_prompt(user_text), device,
-            args.attempts, args.max_new_tokens, args.temperature, args.top_k,
-            topic=topic if topic != "general" else None,
-            recent=recent_answers,
+        answer, status = generate_best(
+            model, tokenizer, cfg, ids, device, query, args.attempts,
+            args.max_new_tokens, args.id_temperature, args.temperature, args.top_k,
         )
-        if not answer.startswith("I couldn't") and not answer.startswith("I could not"):
-            recent_answers.add(answer.casefold())
-            if len(recent_answers) > 50:
-                recent_answers.clear()
         print(f"\n{bot_label} {answer}")
 
 
