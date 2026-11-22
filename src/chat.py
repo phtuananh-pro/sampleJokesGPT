@@ -16,7 +16,7 @@ import torch
 
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
-from .topics import TOPIC_PROMPTS, detect_topics
+from .topics import TOPIC_PROMPTS, detect_requested_topic, detect_topics
 
 
 def choose_device(requested: str) -> torch.device:
@@ -30,8 +30,7 @@ def choose_device(requested: str) -> torch.device:
 
 def detect_intent(user_text: str) -> str:
     """Map a request to the general or topic prompt used by the cleaner."""
-    topics = detect_topics(user_text)
-    return topics[0] if topics else "general"
+    return detect_requested_topic(user_text) or "general"
 
 
 def build_prompt(user_text: str) -> str:
@@ -73,7 +72,10 @@ def is_good_joke(text: str) -> bool:
 
 
 def score_joke(text: str) -> float:
-    """Give readable-length and punchline-punctuation candidates a small boost."""
+    """Prefer reasonably sized and structurally readable candidate answers.
+
+    This is NOT a judge of humor, grammatical coherence, or punchline quality.
+    """
     score = 0.0
     length = len(text)
     if 50 <= length <= 220:
@@ -99,8 +101,12 @@ def generate_one(
     """Sample one response and remove the serialized chat prefix and markers."""
     ids = tokenizer.encode(prompt)
     x = torch.tensor([ids], dtype=torch.long, device=device)
+    eos_id = tokenizer.tokenizer.token_to_id("<|eos|>")
+    if eos_id is None:
+        raise ValueError("Tokenizer is missing <|eos|>.")
     generated = model.generate(
-        x, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_k
+        x, max_new_tokens=max_new_tokens, temperature=temperature,
+        top_k=top_k, eos_token_id=eos_id,
     )
     full_text = tokenizer.decode(generated[0].tolist(), skip_special_tokens=False)
     return extract_answer(full_text)
@@ -109,17 +115,30 @@ def generate_one(
 def generate_best(
     model: GPT, tokenizer: JokeTokenizer, prompt: str, device: torch.device,
     attempts: int, max_new_tokens: int, temperature: float, top_k: int,
+    topic: str | None = None, recent: set[str] | None = None,
 ) -> str:
-    """Generate several candidates, discard malformed text, and rank the rest."""
+    """Generate multiple completions; optionally require a visible topic cue.
+
+    No training-joke retrieval is performed. Word-based relevance checks can
+    reject subtle jokes and still accept irrelevant ones; they are only a
+    transparent first-pass safeguard against obviously off-topic responses.
+    """
     if attempts < 1:
         raise ValueError("attempts must be at least 1.")
     candidates = []
     for _ in range(attempts):
         joke = generate_one(model, tokenizer, prompt, device, max_new_tokens, temperature, top_k)
-        if is_good_joke(joke):
-            candidates.append(joke)
+        if not is_good_joke(joke):
+            continue
+        if recent and joke.casefold() in recent:
+            continue
+        if topic is not None and topic not in detect_topics(joke):
+            continue
+        candidates.append(joke)
     if not candidates:
-        return "I could not generate a good joke. Try again."
+        if topic is not None:
+            return f"I couldn't generate a relevant joke about {topic}. Try again."
+        return "I could not generate a complete joke. Try again."
     return max(candidates, key=score_joke)
 
 
@@ -140,6 +159,22 @@ def load_model(model_dir: Path, device: torch.device) -> tuple[GPT, JokeTokenize
     state = torch.load(model_path, map_location=device, weights_only=True)
     model.load_state_dict(state)
     model.eval()
+    checkpoint = config_data.get("checkpoint", {})
+    print(
+        "Loaded model: "
+        f"{sum(p.numel() for p in model.parameters()):,} parameters | "
+        f"{model.config.n_layer} layers | "
+        f"{model.config.n_head} heads | "
+        f"embedding {model.config.n_embd} | "
+        f"context {model.config.block_size} | "
+        f"vocab {model.config.vocab_size} | "
+        f"dropout {model.config.dropout} | device {device}"
+    )
+    if checkpoint:
+        print(
+            f"Checkpoint: step {checkpoint.get('best_step', '?')}, "
+            f"validation loss {checkpoint.get('best_val_loss', '?')}"
+        )
     return model, tokenizer
 
 
@@ -152,9 +187,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="auto selects CUDA when available, otherwise CPU",
     )
     parser.add_argument("--attempts", type=int, default=20)
-    parser.add_argument("--max_new_tokens", type=int, default=100)
-    parser.add_argument("--temperature", type=float, default=0.9)
-    parser.add_argument("--top_k", type=int, default=50)
+    parser.add_argument("--max_new_tokens", type=int, default=180)
+    parser.add_argument("--temperature", type=float, default=0.75)
+    parser.add_argument("--top_k", type=int, default=40)
     return parser
 
 
@@ -169,6 +204,7 @@ def main() -> None:
     # terminal's normal foreground color.
     you_label = "\033[96mYou:\033[0m"
     bot_label = "\033[93mJoke bot:\033[0m"
+    recent_answers: set[str] = set()
 
     while True:
         user_text = input(f"\n{you_label} ").strip()
@@ -177,10 +213,17 @@ def main() -> None:
         if not user_text:
             print("Please enter a request, such as 'tell me a joke about teachers'.")
             continue
+        topic = detect_intent(user_text)
         answer = generate_best(
             model, tokenizer, build_prompt(user_text), device,
             args.attempts, args.max_new_tokens, args.temperature, args.top_k,
+            topic=topic if topic != "general" else None,
+            recent=recent_answers,
         )
+        if not answer.startswith("I couldn't") and not answer.startswith("I could not"):
+            recent_answers.add(answer.casefold())
+            if len(recent_answers) > 50:
+                recent_answers.clear()
         print(f"\n{bot_label} {answer}")
 
 
