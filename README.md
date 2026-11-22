@@ -126,6 +126,38 @@ models/<run-name>/
 
 Keep `model.pt`, `tokenizer.json`, and `config.json` together when moving a trained model. The copied dataset is useful for provenance but is not required to chat.
 
+### Training-time estimates
+
+Training time depends on CPU/GPU performance, memory bandwidth, batch size, model configuration, dataset size, and evaluation frequency.
+
+The following estimates assume the default training configurations:
+
+- **CPU:** 4 Transformer layers, 256-dimensional embeddings, batch size 32, 5,000 iterations.
+- **CUDA GPU:** 6 Transformer layers, 384-dimensional embeddings, batch size 64, 10,000 iterations.
+- **Both:** 256-token context window, approximately 38 MB of prepared training data.
+
+| Hardware | Example configuration | Estimated training time |
+|---|---|---|
+| Old desktop CPU | Intel i7-5820K, 6 cores | 12–48 hours |
+| Modern desktop CPU | Intel i7-12700K / Ryzen 9 5900X | 3–15 hours |
+| Entry-level CUDA GPU | GTX 1660 / RTX 3050 | 3–12 hours |
+| Midrange CUDA GPU | RTX 3060 / RTX 4060 | 1–5 hours |
+| High-end CUDA GPU | RTX 4090 / RTX 5090 | 20–90 minutes |
+
+**These are approximate estimates, not measured benchmarks.** CPU and CUDA defaults use different model sizes and training settings, so their durations are not directly comparable.
+
+For a more accurate estimate on your machine, measure the elapsed time between two training logs and extrapolate:
+
+\[
+T_{\text{remaining}} \approx
+\frac{T_2-T_1}{S_2-S_1}
+\times(S_{\text{total}}-S_2)
+\]
+
+where \(T_1,T_2\) are elapsed timestamps and \(S_1,S_2\) are training steps.
+
+**Recommendation:** CUDA is preferred for full training. CPU training remains supported for educational experiments; reduce `--max_iters`, `--batch_size`, or model dimensions for quicker runs. Reducing iterations or model capacity may reduce output quality.
+
 ## Chat
 
 Start an interactive session with the trained model:
@@ -196,6 +228,121 @@ python -m unittest discover -s tests -v
 ```
 
 These tests verify parsing, topic routing, joke-level split isolation, assistant-only loss masks, and EOS stopping. They do **not** establish humor or model quality; test actual generated jokes separately after retraining.
+
+## How Training Works: From Text Prediction to a Joke Chatbot
+
+This repository extends [sampleGPT](https://github.com/phtuananh-pro/sampleGPT), which demonstrates a basic decoder-only Transformer trained to predict the next token in a continuous text corpus.
+
+**jokesGPT uses the same Transformer architecture and next-token prediction objective, but introduces conversation-based training, conditional generation, and selective loss computation.** The goal is to teach a small model to respond to user requests rather than simply continue arbitrary text.
+
+### 1. From raw jokes to training conversations
+
+The original dataset contains one complete joke per line. `src/clean_data.py` transforms each joke into structured conversations:
+
+```text
+<|bos|>
+<|user|>Tell me a joke about animals.
+<|assistant|>
+Why did the chicken cross the road?
+To get to the other side.
+<|eos|>
+```
+
+The preprocessing step:
+
+- Normalizes, filters, and deduplicates jokes.
+- Detects topics using predefined keyword rules.
+- Creates several general and topic-specific requests for each joke.
+- Preserves each complete joke as the expected assistant response.
+
+For example, an animal joke can appear with different requests such as "Tell me a joke" and "Tell me a joke about animals."
+
+These additional examples teach the relationship between a **user's request and the appropriate response**. Topic labels are heuristic and may be imperfect.
+
+### 2. Training on complete conversations
+
+Unlike sampleGPT, which samples arbitrary fixed-length token windows from continuous text, jokesGPT processes individual conversations.
+
+Each training example contains:
+
+```text
+[User prompt] + [Complete joke] + [EOS]
+```
+
+The tokenizer converts this sequence into token IDs. The Transformer processes these tokens using causal self-attention, so each position can attend only to preceding positions.
+
+Training examples are padded to a common length. Conversations exceeding the configured context window are skipped rather than truncated.
+
+### 3. Assistant-only next-token prediction
+
+The most important difference is **loss masking**.
+
+The Transformer still predicts the next token at every position, but the training loss is calculated only on assistant-response tokens.
+
+| Sequence component | Visible to attention | Contributes to loss |
+|---|---|---|
+| User prompt | Yes | No |
+| Assistant joke | Yes | Yes |
+| `<\|eos\|>` | Yes | Yes |
+| Padding | No useful content | No |
+
+The objective is still cross-entropy over next-token predictions:
+
+\[
+\mathcal{L}=-\frac{1}{|A|}\sum_{t\in A}\log P_\theta(x_t\mid x_{<t})
+\]
+
+where \(A\) represents the assistant-response token positions, including the end-of-sequence token.
+
+The prompt does not contribute directly to the loss, but it remains part of the model's context. Gradients can therefore train the Transformer to use information from the prompt when predicting the joke.
+
+This is **conditional autoregressive language modeling**, implemented with the same causal Transformer and backpropagation mechanisms as sampleGPT.
+
+### 4. Learning topic conditioning and response completion
+
+Two behaviors emerge from the training structure:
+
+**Topic conditioning:** By observing requests paired with relevant jokes, the model learns to associate topics such as programming, teachers, and animals with corresponding response patterns.
+
+**Response completion:** Every training answer ends with `<|eos|>`. The model learns to predict this token as the end of an answer.
+
+During inference, the chatbot supplies a user-request prefix and generates the answer one token at a time until `<|eos|>` or a maximum token limit is reached.
+
+The chatbot also samples multiple candidates and applies basic quality and topic filters. These checks do not replace language generation.
+
+### 5. Training and validation
+
+All prompt variations associated with the same original joke are kept in the same training or validation split.
+
+This prevents a joke from appearing in training under one prompt and in validation under another, which would otherwise make validation results misleading.
+
+The training loop remains conventional:
+
+1. Sample a batch of complete conversations.
+2. Predict the next token at every position using the causal Transformer.
+3. Calculate cross-entropy on assistant tokens only.
+4. Backpropagate the loss and update model parameters with AdamW.
+5. Periodically evaluate on held-out jokes and save the best checkpoint.
+
+Validation loss measures predictive accuracy, not whether a generated joke is funny, coherent, or relevant.
+
+### What This Adds Beyond sampleGPT
+
+| sampleGPT | jokesGPT |
+|---|---|
+| Continuous text corpus | Structured user–assistant conversations |
+| Arbitrary token windows | Complete conversation examples |
+| Loss over all target tokens | Assistant-only loss masking |
+| General text continuation | User-request-conditioned generation |
+| No explicit response ending | Learned `<\|eos\|>` stopping |
+| Token-level dataset split | Joke-level train/validation split |
+| Basic text generation | Interactive chatbot with topic-aware candidate filtering |
+
+**The core Transformer remains unchanged.** Both repositories demonstrate token embeddings, positional embeddings, causal self-attention, feed-forward networks, cross-entropy loss, backpropagation, and autoregressive generation.
+
+The additional educational value of jokesGPT is showing **how training data structure and loss design can transform a basic language model into a task-specific chatbot**, without pretrained weights, retrieval, or an external LLM.
+
+Because the model is small and trained from scratch, generating coherent, funny, topic-relevant jokes is a learned capability rather than a guarantee.
 
 ## What this tutorial demonstrates
 
