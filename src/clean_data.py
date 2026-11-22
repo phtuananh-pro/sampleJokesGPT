@@ -121,7 +121,7 @@ def main():
                     topic_counts[prompt] += 1
 
     print(f"Input lines cleaned: {len(jokes)}")
-    print(f"Training examples written: {len(jokes) + sum(topic_counts.values())}")
+    print(f"Training examples written: {len(jokes) * len(GENERAL_PROMPTS) + sum(topic_counts.values())}")
     print("Topic-labeled examples (keyword-based):")
     for topic, prompts in TOPIC_VARIANTS.items():
         count = sum(topic_counts[prompt] for prompt in prompts)
