@@ -19,6 +19,7 @@ import torch
 
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
+from .training_data import encode_conversations, parse_conversations, sample_batch, split_by_joke
 
 
 # Smaller defaults keep the CPU path usable for a teaching-sized run.
@@ -26,7 +27,7 @@ CPU_DEFAULTS = {
     "bpe_vocab_size": 2000,
     "bpe_min_pair_freq": 2,
     "bpe_train_chars": 3_000_000,
-    "block_size": 128,
+    "block_size": 256,
     "batch_size": 32,
     "max_iters": 5000,
     "eval_interval": 100,
@@ -115,6 +116,9 @@ def main() -> None:
     out_dir.mkdir(parents=True)
 
     text = data_path.read_text(encoding="utf-8")
+    all_examples = parse_conversations(text)
+    train_examples, val_examples = split_by_joke(all_examples, args.seed)
+    log(f"Parsed {len(all_examples):,} complete chat samples; split by unique jokes")
     log("Training byte-level BPE tokenizer...")
     # Training on a prefix speeds tokenizer construction; the model still sees
     # the full encoded dataset below.
@@ -134,15 +138,21 @@ def main() -> None:
     if tokenizer_train_path.parent == out_dir:
         tokenizer_train_path.unlink(missing_ok=True)
 
-    log("Encoding full dataset...")
-    ids = torch.tensor(tokenizer.encode(text), dtype=torch.long)
-    if len(ids) < args.block_size * 20:
-        raise ValueError(f"Tokenized dataset too small: {len(ids)} tokens")
+    log("Encoding complete training/validation conversations...")
+    train_data, skipped_train = encode_conversations(train_examples, tokenizer, args.block_size)
+    val_data, skipped_val = encode_conversations(val_examples, tokenizer, args.block_size)
+    if not train_data or not val_data:
+        raise ValueError(
+            "No complete examples fit the context window in one split. "
+            "Increase --block_size or shorten the corpus examples."
+        )
+    log(
+        f"Usable conversations: train={len(train_data):,}, val={len(val_data):,}; "
+        f"skipped too long: train={skipped_train:,}, val={skipped_val:,}"
+    )
 
     # Keep a copy with the run so the checkpoint remains interpretable.
     shutil.copyfile(data_path, out_dir / "data_clean.txt")
-    split_index = int(0.9 * len(ids))
-    train_data, val_data = ids[:split_index], ids[split_index:]
 
     config = GPTConfig(
         vocab_size=tokenizer.vocab_size,
@@ -160,14 +170,23 @@ def main() -> None:
     best_val_loss = float("inf")
     best_step = None
     log(f"Device: {args.device}")
-    log(f"BPE vocabulary: {tokenizer.vocab_size:,}; total tokens: {len(ids):,}")
-    log(f"Train / validation tokens: {len(train_data):,} / {len(val_data):,}")
+    pad_id = tokenizer.tokenizer.token_to_id("<|pad|>")
+    if pad_id is None:
+        raise ValueError("Tokenizer does not contain the padding token")
+    log(
+        f"Model configuration: parameters={sum(p.numel() for p in model.parameters()):,}; "
+        f"vocab={config.vocab_size:,}; context={config.block_size}; "
+        f"layers={config.n_layer}; heads={config.n_head}; embedding={config.n_embd}; "
+        f"dropout={config.dropout}; device={args.device}"
+    )
+    log(f"BPE vocabulary: {tokenizer.vocab_size:,}")
+    log(f"Train / validation conversations: {len(train_data):,} / {len(val_data):,}")
 
     for step in range(args.max_iters + 1):
         if step % args.eval_interval == 0:
             losses = estimate_loss(
                 model, train_data, val_data, args.batch_size, args.block_size,
-                args.device, args.eval_iters,
+                pad_id, args.device, args.eval_iters,
             )
             log(
                 f"step {step}/{args.max_iters}: train loss {losses['train']:.4f}, "
@@ -179,7 +198,7 @@ def main() -> None:
                 save_checkpoint(out_dir, model, config, args, best_val_loss)
 
         # Each sampled x window is paired with y shifted one token to the right.
-        x, y = get_batch(train_data, args.batch_size, args.block_size, args.device)
+        x, y = sample_batch(train_data, args.batch_size, args.block_size, pad_id, args.device)
         _, loss = model(x, y)
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
@@ -188,33 +207,28 @@ def main() -> None:
         optimizer.step()
 
     save_config_to_file(
-        args, data_path, out_dir, runtime_info, text, tokenizer, ids,
-        train_data, val_data, config, best_val_loss, best_step,
+        args, data_path, out_dir, runtime_info, text, tokenizer,
+        train_data, val_data, skipped_train, skipped_val, config, best_val_loss, best_step,
     )
     log(f"Training complete. Best validation loss: {best_val_loss:.4f} at step {best_step}.")
+    log(
+        f"Saved model configuration: {sum(p.numel() for p in model.parameters()):,} parameters, "
+        f"{config.n_layer} layers, {config.n_head} heads, {config.n_embd} embedding width, "
+        f"{config.block_size} context, {config.vocab_size} vocabulary, "
+        f"dropout={config.dropout}; checkpoint step={best_step}"
+    )
     log(f"Saved model, tokenizer, config, and data copy to: {out_dir}")
 
 
-def get_batch(data, batch_size: int, block_size: int, device: str):
-    """Sample random token contexts and the next-token targets for each one."""
-    max_start = len(data) - block_size - 1
-    if max_start <= 0:
-        raise ValueError("Dataset is too small for this block_size")
-    starts = torch.randint(max_start, (batch_size,))
-    x = torch.stack([data[i : i + block_size] for i in starts])
-    y = torch.stack([data[i + 1 : i + block_size + 1] for i in starts])
-    return x.to(device), y.to(device)
-
-
 @torch.no_grad()
-def estimate_loss(model, train_data, val_data, batch_size, block_size, device, eval_iters):
-    """Average cross-entropy over sampled training and validation batches."""
+def estimate_loss(model, train_data, val_data, batch_size, block_size, pad_id, device, eval_iters):
+    """Evaluate assistant-only cross-entropy on complete held-out jokes."""
     model.eval()
     result = {}
     for split, data in (("train", train_data), ("val", val_data)):
         losses = torch.zeros(eval_iters)
         for i in range(eval_iters):
-            x, y = get_batch(data, batch_size, block_size, device)
+            x, y = sample_batch(data, batch_size, block_size, pad_id, device)
             _, loss = model(x, y)
             losses[i] = loss.item()
         result[split] = losses.mean().item()
@@ -234,16 +248,19 @@ def save_checkpoint(out_dir: Path, model: GPT, config: GPTConfig, args, best_val
 
 
 def save_config_to_file(
-    args, data_path, out_dir, runtime_info, text, tokenizer, ids,
-    train_data, val_data, config, best_val_loss, best_step,
+    args, data_path, out_dir, runtime_info, text, tokenizer,
+    train_data, val_data, skipped_train, skipped_val, config, best_val_loss, best_step,
 ) -> None:
     """Write final provenance and training statistics to config.json."""
     dataset_stats = {
         "raw_chars": len(text),
-        "total_tokens": len(ids),
-        "train_tokens": len(train_data),
-        "val_tokens": len(val_data),
-        "train_ratio": 0.9,
+        "total_conversations": len(train_data) + len(val_data) + skipped_train + skipped_val,
+        "train_conversations": len(train_data),
+        "val_conversations": len(val_data),
+        "train_skipped_over_context": skipped_train,
+        "val_skipped_over_context": skipped_val,
+        "split_strategy": "by_distinct_joke_before_prompt_augmentation",
+        "loss_scope": "assistant_tokens_including_eos",
     }
     payload = build_config_payload(
         args, config, tokenizer, data_path, out_dir, dataset_stats,
