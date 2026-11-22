@@ -6,7 +6,7 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-from .topics import TOPIC_PROMPTS, detect_topics
+from .topics import GENERAL_PROMPTS, TOPIC_VARIANTS, detect_topics
 
 
 def normalize_text(text: str) -> str:
@@ -59,12 +59,13 @@ def to_training_sample(joke: str, prompt: str) -> str:
 
 
 def prompts_for_joke(joke: str) -> list[str]:
-    """Return a general prompt plus prompts for keyword-matched joke topics."""
-    prompts = ["Tell me a joke."]
-    prompts.extend(
-        TOPIC_PROMPTS[topic]
-        for topic in detect_topics(joke)
-    )
+    """Augment each complete joke with varied requests matching its detected topic.
+
+    Topic recognition is approximate; manually inspect examples for label noise.
+    """
+    prompts = list(GENERAL_PROMPTS)
+    for topic in detect_topics(joke):
+        prompts.extend(TOPIC_VARIANTS[topic])
     return prompts
 
 
@@ -116,14 +117,15 @@ def main():
             for prompt in prompts:
                 f.write(to_training_sample(joke, prompt))
                 f.write("\n")
-                if prompt != "Tell me a joke.":
+                if prompt not in GENERAL_PROMPTS:
                     topic_counts[prompt] += 1
 
     print(f"Input lines cleaned: {len(jokes)}")
     print(f"Training examples written: {len(jokes) + sum(topic_counts.values())}")
     print("Topic-labeled examples (keyword-based):")
-    for prompt in TOPIC_PROMPTS.values():
-        print(f"  {prompt} {topic_counts[prompt]:,}")
+    for topic, prompts in TOPIC_VARIANTS.items():
+        count = sum(topic_counts[prompt] for prompt in prompts)
+        print(f"  {topic}: {count:,} labeled request/joke examples")
     print(f"Output written to: {output_path}")
 
 
