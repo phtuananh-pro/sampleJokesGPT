@@ -4,7 +4,7 @@
 
 This repository is a runnable, joke-focused companion to Part IV, “The Transformer Revolution,” of the [Frontier Models guide](https://frontiermodels.guide). It takes a text file of jokes, prepares short chat examples, and trains a decoder-only Transformer from scratch. The result is an interactive chatbot that generates jokes from patterns learned in that dataset.
 
-The model is trained with self-supervised next-token prediction: the serialized conversation already contains the next token used as the target, so no separately labeled answer is required. Its implementation makes the Part IV path inspectable: token and position embeddings; Q/K/V projections; scaled causal attention; multiple heads; residual connections and normalization; a position-wise feed-forward network; shifted-token cross-entropy; parameter updates; and autoregressive generation. The chat program adds intent routing and ranks several generated candidates with simple quality heuristics.
+The model performs autoregressive next-token prediction over the **answer portion of weakly labeled prompt–joke examples**. Generated requests provide conditioning, while the original jokes supply the response targets; this is conditional language-model training rather than unstructured self-supervised pretraining. Its implementation makes the Part IV path inspectable: token and position embeddings; Q/K/V projections; scaled causal attention; multiple heads; residual connections and normalization; a position-wise feed-forward network; shifted-token cross-entropy; parameter updates; and autoregressive generation. The chat program adds topic routing and filters/ranks multiple generated candidates. Training uses complete conversations with **assistant-only loss**: the request is conditioning context, and only joke text and the end-of-answer marker are prediction targets. There is no retrieval.
 
 This is a small teaching chatbot, not a general-purpose or pretrained language model. Its answers depend on the jokes used for training. The Transformer is written explicitly in `src/model.py`; PyTorch supplies tensor operations, automatic differentiation, and optimization. The tokenizer uses byte-level BPE from Hugging Face `tokenizers`.
 
@@ -40,7 +40,8 @@ sampleJokesGPT/
 │   ├── clean_data.py           # normalize, filter, and serialize jokes
 │   ├── tokenizer.py            # byte-level BPE tokenizer teaching example
 │   ├── model.py                # decoder-only Transformer and generation
-│   ├── train.py                # self-supervised training and checkpointing
+│   ├── training_data.py        # whole chat samples, split and assistant-only loss masks
+│   ├── train.py                # masked next-token training and checkpointing
 │   ├── chat.py                 # interactive joke generation and ranking
 │   └── topics.py               # shared topic prompts and keyword rules
 ├── requirements.txt
@@ -49,9 +50,9 @@ sampleJokesGPT/
 
 ## Prepare the dataset (optional)
 
-`data/raw_data.txt` contains one joke per line. The cleaner normalizes and filters the jokes, removes duplicates, then writes one general training example per joke. It also adds topic-specific examples when whole-word keywords match programming, teachers, or animals. These keyword labels are automatic estimates; they can miss jokes that imply a topic without naming it, or tag a joke that only mentions the topic.
+`data/raw_data.txt` contains one joke per line. The cleaner normalizes, filters, and deduplicates jokes. It then creates varied general prompts and topic-specific prompts when whole-word keywords suggest programming, teachers, animals, children, or work. These keyword labels are automatic estimates; they can miss jokes that imply a topic without naming it, or tag a joke that only mentions the topic.
 
-Regenerate the cleaned data before training to use topic-specific requests. Review the reported per-topic counts and inspect examples if you change the corpus or keyword lists. The cleaner writes multiple samples for a joke when it matches more than one topic.
+Regenerate the cleaned data before training to use topic-specific requests. Review the reported per-topic counts and inspect examples if you change the corpus or keyword lists. The cleaner writes multiple samples for jokes matching more than one topic. Keywords are weak labels, not reliable semantic classifications: inspect samples and topic counts before training.
 
 macOS/Linux:
 ```bash
@@ -79,7 +80,7 @@ For example, a keyword-matched teacher joke also gets a sample with this prompt:
 <|user|>Tell me a joke about teachers.
 ```
 
-These markers are ordinary vocabulary items for this model. During training, the model predicts the next token throughout the entire serialized text, including both the request and the joke.
+The markers are dedicated tokenizer vocabulary items. The **user prompt is conditioning context, not a loss target**. Each independently padded conversation teaches the model to predict assistant tokens, including `<|eos|>`, using shifted next-token cross-entropy. The split is by original joke, keeping all prompt variations on the same side of validation. Samples that cannot fit the context length are counted and skipped rather than truncated.
 
 ## Train
 
@@ -109,7 +110,7 @@ python -m src.train --data .\data\clean_data.txt --out_dir .\models\jokes_cuda -
 
 `--device cuda` reports an error if CUDA is unavailable. Use `--device cpu` to force CPU execution. The automatically selected device also controls the default model size: CPU uses a smaller configuration; CUDA uses a wider, deeper configuration. Pass individual training options to override those presets.
 
-The training loop reports train and validation loss and saves the best validation checkpoint. Training time varies with dataset size, model settings, processor, GPU, PyTorch build, and system load. For a quicker demonstration, lower `--max_iters`, `--eval_iters`, and `--n_embd`.
+Training logs use local 24-hour `[HH:MM:SS]` timestamps. Training prints model configuration (parameter count, vocabulary, context, layers, heads, embedding width, dropout and device), logs assistant-only train/validation loss, and prints the saved configuration and best checkpoint step at the end. Training time varies with dataset size, model settings, processor, GPU, PyTorch build, and system load. For a quicker demonstration, lower `--max_iters`, `--eval_iters`, and `--n_embd`.
 
 ### Model output folder
 
@@ -139,7 +140,7 @@ Windows PowerShell:
 python -m src.chat --model_dir .\models\jokes_demo --device auto
 ```
 
-The chatbot routes requests mentioning programming, teachers, or animals to the corresponding prompt learned during training. Other requests use the general joke prompt. It generates multiple candidates, filters malformed or repetitive text, then displays the highest-scoring candidate. Type `exit`, `quit`, or `q` to leave. The candidate scoring is a small heuristic, not a measure of whether a joke is actually funny. The `You:` and `Joke bot:` labels are colored; the query and answer use the terminal's normal text color.
+The chatbot routes requests mentioning programming, teachers, animals, children or work to a canonical prompt learned during training. Other requests use the general prompt. It generates multiple candidates until `<|eos|>` or a token safety limit, filters malformed/repetitive answers and rejects visibly off-topic candidates when a topic is requested. A simple word-based topic check can both reject subtly relevant jokes and accept weak jokes that merely mention a keyword. The model is still a generator, not a retrieval engine. At startup the chatbot prints the model parameter count, architecture, vocabulary, dropout, context, device, and saved validation/checkpoint details when available. Type `exit`, `quit`, or `q` to leave. The candidate scoring is a small heuristic, not a measure of whether a joke is actually funny. The `You:` and `Joke bot:` labels are colored; the query and answer use the terminal's normal text color.
 
 Illustrative interaction (sample wording; actual generated answers vary):
 
@@ -162,13 +163,13 @@ python -m src.train --data .\data\clean_data.txt --out_dir .\models\jokes_topics
 python -m src.chat --model_dir .\models\jokes_topics --device auto
 ```
 
-The existing checkpoint does not gain topic conditioning from changing the chat code alone; the new prompt examples must be included in training.
+Existing checkpoints do not gain the new behavior merely through code changes. Regenerate the corpus and train a fresh checkpoint with the new training objective.
 
 Sampling controls can be changed at launch:
 
 macOS/Linux:
 ```bash
-python -m src.chat --model_dir models/jokes_demo --attempts 20 --max_new_tokens 100 --temperature 0.9 --top_k 50
+python -m src.chat --model_dir models/jokes_demo --attempts 20 --max_new_tokens 180 --temperature 0.75 --top_k 40
 ```
 
 Windows PowerShell:
@@ -176,12 +177,22 @@ Windows PowerShell:
 python -m src.chat --model_dir .\models\jokes_demo --attempts 20 --max_new_tokens 100 --temperature 0.9 --top_k 50
 ```
 
+### What improved, and what remains limited
+
+- **Complete joke training:** each training item is one request and a full joke; padding and prompt tokens do not contribute to training loss. EOS is a learned prediction target.
+- **Topic conditioning:** multiple prompt variations teach user-request/answer relations. Labels are keyword-based and may be wrong.
+- **No retrieval:** the Transformer samples new tokens instead of looking up jokes. Neither intact original jokes, humor, nor topic relevance can be guaranteed for a small from-scratch model.
+- **Validation:** all prompt variants of an original joke are grouped into either training or validation. Held-out next-token loss does not measure humor, semantic relevance, or completeness.
+- **Checkpoint:** regenerate the clean corpus and train a **new model**. Older weights were trained on a different objective. The saved data copy records the input corpus used for each run.
+
+Evaluate on a small fixed list of generic and topic-specific questions. Check each generated answer for (1) topic relevance, (2) a complete setup–punchline structure, and (3) readable language. Record failures, not just examples that look good.
+
 ## What this tutorial demonstrates
 
 | Part IV idea | Where to see it |
 |---|---|
 | Chat text becomes token IDs | `src/tokenizer.py` |
-| Shifted input and target windows | `src/train.py:get_batch` |
+| Whole-conversation samples, grouped validation splits, masked assistant targets | `src/training_data.py` |
 | Token and position embeddings | `src/model.py:GPT` |
 | Q/K/V projections and scaled dot products | `src/model.py:CausalSelfAttention` |
 | Causal masking before softmax | `src/model.py:CausalSelfAttention.forward` |
@@ -208,7 +219,7 @@ Pass these options to `python -m src.train`. Defaults shown as “device preset�
 | `--bpe_vocab_size` | `2000` | Target maximum vocabulary size for the byte-level BPE tokenizer. |
 | `--bpe_min_pair_freq` | `2` | Minimum occurrence count for a tokenizer merge. |
 | `--bpe_train_chars` | `3000000` | Maximum initial text characters used to train the tokenizer; `0` uses the full file. |
-| `--block_size` | `128` | Maximum preceding-token context used for each prediction. |
+| `--block_size` | `256` | Maximum context: prompt, joke and EOS must fit together. |
 | `--batch_size` | CPU `32`; CUDA `64` | Number of token windows in one optimizer update. |
 | `--max_iters` | CPU `5000`; CUDA `10000` | Number of training updates. |
 | `--eval_interval` | CPU `100`; CUDA `500` | Updates between loss evaluations and best-checkpoint saves. |
