@@ -1,7 +1,7 @@
 """Train the joke chatbot's decoder-only Transformer from serialized text.
 
-The loop samples token windows, predicts the token one position ahead,
-computes cross-entropy, and updates the model with AdamW. Run from the
+The loop samples complete request/joke conversations, computes assistant-only
+shifted next-token cross-entropy, and updates parameters with AdamW. Run from the
 repository root with ``python -m src.train``.
 """
 
@@ -46,7 +46,7 @@ GPU_DEFAULTS = {
     "bpe_vocab_size": 2000,
     "bpe_min_pair_freq": 2,
     "bpe_train_chars": 3_000_000,
-    "block_size": 128,
+    "block_size": 256,
     "batch_size": 64,
     "max_iters": 10000,
     "eval_interval": 500,
@@ -259,7 +259,7 @@ def save_config_to_file(
         "val_conversations": len(val_data),
         "train_skipped_over_context": skipped_train,
         "val_skipped_over_context": skipped_val,
-        "split_strategy": "by_distinct_joke_before_prompt_augmentation",
+        "split_strategy": "grouped_by_distinct_joke_to_prevent_prompt_variant_leakage",
         "loss_scope": "assistant_tokens_including_eos",
     }
     payload = build_config_payload(
