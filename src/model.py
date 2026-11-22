@@ -213,8 +213,9 @@ class GPT(nn.Module):
         max_new_tokens: int,
         temperature: float = 0.9,
         top_k: int | None = 50,
+        eos_token_id: int | None = None,
     ):
-        """Autoregressively sample tokens, cropping input to the context window.
+        """Autoregressively sample until EOS or the token safety limit.
 
         At each step the model predicts a distribution for the next token;
         temperature and top-k alter sampling, then the selected token is
@@ -245,5 +246,8 @@ class GPT(nn.Module):
                 next_id = torch.multinomial(probs, num_samples=1)
 
             idx = torch.cat((idx, next_id), dim=1)
+            # A complete training answer ends in EOS; stop there at inference.
+            if eos_token_id is not None and bool((next_id == eos_token_id).all()):
+                break
 
         return idx
