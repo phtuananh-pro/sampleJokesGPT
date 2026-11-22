@@ -3,31 +3,27 @@ import html
 import random
 import re
 import unicodedata
+from collections import Counter
 from pathlib import Path
 
-
-USER_PROMPTS = [
-    "Tell me a joke.",
-    "Tell me a short joke.",
-    "Give me a funny joke.",
-    "Make me laugh.",
-    "Tell me one joke.",
-    "Give me a clean joke.",
-]
+from .topics import TOPIC_PROMPTS, detect_topics
 
 
 def normalize_text(text: str) -> str:
+    """Normalize Unicode, HTML entities, punctuation, and repeated whitespace."""
     text = text.replace("\ufeff", "")
     text = html.unescape(text)
     text = unicodedata.normalize("NFKC", text)
-    text = text.replace("“", '"').replace("”", '"')
-    text = text.replace("‘", "'").replace("’", "'")
-    text = text.replace("—", "-").replace("–", "-")
+    text = text.translate(str.maketrans({
+        "“": '"', "”": '"', "„": '"',
+        "‘": "'", "’": "'", "–": "-", "—": "-",
+    }))
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
 def remove_possible_id(text: str) -> str:
+    """Remove a leading numeric record ID separated by common delimiters."""
     # Handles lines like:
     # 123,Why did...
     # 123\tWhy did...
@@ -37,6 +33,7 @@ def remove_possible_id(text: str) -> str:
 
 
 def is_valid_joke(text: str, min_chars: int, max_chars: int) -> bool:
+    """Reject empty, unusually sized, URL-heavy, or non-text records."""
     if len(text) < min_chars:
         return False
     if len(text) > max_chars:
@@ -51,6 +48,7 @@ def is_valid_joke(text: str, min_chars: int, max_chars: int) -> bool:
 
 
 def to_training_sample(joke: str, prompt: str) -> str:
+    """Serialize one user request and joke with explicit chat boundary tokens."""
     return (
         "<|bos|>\n"
         f"<|user|>{prompt}\n"
@@ -60,7 +58,18 @@ def to_training_sample(joke: str, prompt: str) -> str:
     )
 
 
+def prompts_for_joke(joke: str) -> list[str]:
+    """Return a general prompt plus prompts for keyword-matched joke topics."""
+    prompts = ["Tell me a joke."]
+    prompts.extend(
+        TOPIC_PROMPTS[topic]
+        for topic in detect_topics(joke)
+    )
+    return prompts
+
+
 def main():
+    """Read raw jokes, deduplicate and shuffle them, then write training text."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default="data.txt")
     parser.add_argument("--output", default="data_clean.txt")
@@ -99,16 +108,31 @@ def main():
             jokes.append(joke)
 
     random.shuffle(jokes)
+    topic_counts = Counter()
 
     with output_path.open("w", encoding="utf-8", newline="\n") as f:
-        for i, joke in enumerate(jokes):
-            prompt = USER_PROMPTS[i % len(USER_PROMPTS)]
-            f.write(to_training_sample(joke, prompt))
-            f.write("\n")
+        for joke in jokes:
+            prompts = prompts_for_joke(joke)
+            for prompt in prompts:
+                f.write(to_training_sample(joke, prompt))
+                f.write("\n")
+                if prompt != "Tell me a joke.":
+                    topic_counts[prompt] += 1
 
     print(f"Input lines cleaned: {len(jokes)}")
+    print(f"Training examples written: {len(jokes) + sum(topic_counts.values())}")
+    print("Topic-labeled examples (keyword-based):")
+    for prompt in TOPIC_PROMPTS.values():
+        print(f"  {prompt} {topic_counts[prompt]:,}")
     print(f"Output written to: {output_path}")
 
 
 if __name__ == "__main__":
     main()
+"""Clean one-joke-per-line text into the chatbot's supervised dialogue form.
+
+The cleaner normalizes dataset text and creates user/assistant markers. This
+is data preparation for the self-supervised next-token objective: the model
+still learns every target from the following token in this serialized stream.
+"""
+

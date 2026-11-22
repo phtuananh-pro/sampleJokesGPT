@@ -11,9 +11,9 @@
   "model": {
     "vocab_size": 2000,
     "block_size": 128,
-    "n_layer": 4,
-    "n_head": 4,
-    "n_embd": 256,
+    "n_layer": 6,
+    "n_head": 6,
+    "n_embd": 384,
     "dropout": 0.2
   },
   "tokenizer": {
@@ -32,16 +32,25 @@
     ]
   },
   "training": {
+    "data": ".\\data\\clean_data.txt",
+    "out_dir": ".\\models\\jokes_bpe",
     "block_size": 128,
-    "batch_size": 32,
-    "max_iters": 5000,
-    "eval_interval": 100,
+    "batch_size": 64,
+    "max_iters": 10000,
+    "eval_interval": 500,
     "eval_iters": 100,
     "learning_rate": 0.0003,
     "weight_decay": 0.1,
     "grad_clip": 1.0,
     "seed": 1337,
-    "device": "cpu"
+    "device": "cuda",
+    "n_layer": 6,
+    "n_head": 6,
+    "n_embd": 384,
+    "dropout": 0.2,
+    "bpe_vocab_size": 2000,
+    "bpe_min_pair_freq": 2,
+    "bpe_train_chars": 3000000
   },
   "dataset": {
     "raw_chars": 35014033,
@@ -51,15 +60,17 @@
     "train_ratio": 0.9
   },
   "checkpoint": {
-    "best_val_loss": 2.666271924972534,
-    "best_step": 4900
+    "best_val_loss": 2.222738742828369,
+    "best_step": 10000
   },
   "runtime": {
-    "created_at": "2026-06-19T10:11:14",
+    "created_at": "2026-11-22T11:49:40",
     "python_version": "3.14.6",
-    "platform": "Windows-11-10.0.22621-SP0",
-    "torch_version": "2.12.1+cpu",
-    "cuda_available": false,
-    "device": "cpu"
+    "platform": "Windows-11-10.0.26300-SP0",
+    "torch_version": "2.15.0+cu132",
+    "cuda_available": true,
+    "device": "cuda",
+    "cuda_device_name": "NVIDIA GeForce RTX 3060",
+    "cuda_device_count": 1
   }
 }

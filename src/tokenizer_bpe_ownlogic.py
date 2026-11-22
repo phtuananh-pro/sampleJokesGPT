@@ -5,6 +5,8 @@ from pathlib import Path
 
 
 class BPETokenizer:
+    """Learn byte-pair merges and map UTF-8 text to reversible integer IDs."""
+
     SPECIAL_TOKENS = [
         "<|pad|>",
         "<|bos|>",
@@ -14,6 +16,7 @@ class BPETokenizer:
     ]
 
     def __init__(self):
+        """Initialize special IDs, all byte IDs, and empty merge tables."""
         self.special_to_id = {tok: i for i, tok in enumerate(self.SPECIAL_TOKENS)}
         self.id_to_special = {i: tok for tok, i in self.special_to_id.items()}
 
@@ -38,6 +41,12 @@ class BPETokenizer:
         min_pair_freq: int = 2,
         verbose: bool = True,
     ):
+        """Learn frequent adjacent byte pairs until the target vocabulary size.
+
+        Each selected pair is assigned a new ID and replaced throughout the
+        training sequences, which is the iterative BPE vocabulary-building
+        procedure.
+        """
         tokenizer = cls()
 
         target_vocab_size = max(vocab_size, tokenizer.vocab_size)
@@ -80,9 +89,11 @@ class BPETokenizer:
         return tokenizer
 
     def _is_special_id(self, token_id: int) -> bool:
+        """Return whether an ID is reserved for a chat/control marker."""
         return token_id in self.id_to_special
 
     def _text_to_initial_sequences(self, text: str) -> list[list[int]]:
+        """Convert each input line independently to initial byte/special IDs."""
         # Keep lines separate to avoid learning huge cross-line merges.
         lines = text.splitlines(keepends=True)
         sequences = []
@@ -95,6 +106,7 @@ class BPETokenizer:
         return sequences
 
     def _initial_encode(self, text: str) -> list[int]:
+        """Split recognized special markers from text and UTF-8 encode the rest."""
         ids = []
 
         parts = self.special_re.split(text)
@@ -113,6 +125,7 @@ class BPETokenizer:
 
     @staticmethod
     def _replace_pair(seq: list[int], pair: tuple[int, int], new_id: int) -> list[int]:
+        """Replace non-overlapping occurrences of a pair with its merged ID."""
         out = []
         i = 0
 
@@ -127,6 +140,7 @@ class BPETokenizer:
         return out
 
     def encode(self, text: str) -> list[int]:
+        """Encode text with the merges learned by this tokenizer instance."""
         sequences = self._text_to_initial_sequences(text)
         encoded = []
 
@@ -136,6 +150,7 @@ class BPETokenizer:
         return encoded
 
     def _encode_sequence(self, seq: list[int]) -> list[int]:
+        """Apply available merges in learned rank order to one token sequence."""
         seq = list(seq)
 
         while True:
@@ -164,10 +179,12 @@ class BPETokenizer:
         return seq
 
     def decode(self, ids: list[int]) -> str:
+        """Reassemble bytes and special markers, replacing invalid UTF-8 safely."""
         parts = []
         byte_buffer = bytearray()
 
         def flush_bytes():
+            """Decode the buffered ordinary bytes before emitting a marker."""
             nonlocal byte_buffer
             if byte_buffer:
                 parts.append(byte_buffer.decode("utf-8", errors="replace"))
@@ -189,6 +206,7 @@ class BPETokenizer:
         return "".join(parts)
 
     def save(self, path: str | Path):
+        """Persist special tokens, merges, and byte expansions as JSON."""
         path = Path(path)
 
         data = {
@@ -208,6 +226,7 @@ class BPETokenizer:
 
     @classmethod
     def load(cls, path: str | Path):
+        """Restore merge ranks and byte expansions from a saved tokenizer."""
         path = Path(path)
 
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -229,3 +248,10 @@ class BPETokenizer:
             tokenizer.merge_ranks[(a, b)] = (rank, new_id)
 
         return tokenizer
+"""Legacy from-scratch byte-level BPE tokenizer kept for study.
+
+The runnable chatbot uses :mod:`src.tokenizer` and the ``tokenizers`` package.
+This separate implementation exposes the merge-counting and byte-encoding
+ideas but is not used by the training or chat entry points.
+"""
+

@@ -1,3 +1,11 @@
+"""Explicit decoder-only Transformer components used by the joke chatbot.
+
+The tensor flow follows Part IV of the Frontier Models guide: token and
+position embeddings enter repeated causal-attention/MLP blocks, then a shared
+vocabulary head predicts the next token. PyTorch provides tensor operations,
+autograd, and optimization; the Transformer operations remain visible here.
+"""
+
 from dataclasses import dataclass
 
 import torch
@@ -7,6 +15,12 @@ import torch.nn.functional as F
 
 @dataclass
 class GPTConfig:
+    """Store the vocabulary and dimensions needed to build a GPT model.
+
+    Training saves these values with the checkpoint so inference can recreate
+    the same architecture before loading its learned parameters.
+    """
+
     vocab_size: int
     block_size: int = 128
     n_layer: int = 6
@@ -16,10 +30,19 @@ class GPTConfig:
 
 
 class CausalSelfAttention(nn.Module):
+    """Route information among positions without exposing future tokens.
+
+    Learned Q/K/V projections produce per-head queries, keys, and values. A
+    lower-triangular mask removes future positions before softmax, and the
+    resulting weights mix value vectors as described in Part IV.7–8.
+    """
+
     def __init__(self, config: GPTConfig):
+        """Create projections, dropout layers, and the fixed causal mask."""
         super().__init__()
 
-        assert config.n_embd % config.n_head == 0
+        if config.n_head <= 0 or config.n_embd % config.n_head != 0:
+            raise ValueError("n_embd must be divisible by a positive n_head.")
 
         self.n_head = config.n_head
         self.head_dim = config.n_embd // config.n_head
@@ -37,6 +60,7 @@ class CausalSelfAttention(nn.Module):
         )
 
     def forward(self, x):
+        """Apply multi-head causal attention to ``[batch, time, width]``."""
         B, T, C = x.shape
 
         qkv = self.c_attn(x)
@@ -63,7 +87,14 @@ class CausalSelfAttention(nn.Module):
 
 
 class MLP(nn.Module):
+    """Apply the same nonlinear feature transform independently per token.
+
+    Attention mixes across sequence positions; this FFN expands and contracts
+    each position's feature vector, preserving the model width (Part IV.10).
+    """
+
     def __init__(self, config: GPTConfig):
+        """Build the expansion, GELU, projection, and dropout layers."""
         super().__init__()
 
         self.net = nn.Sequential(
@@ -74,11 +105,15 @@ class MLP(nn.Module):
         )
 
     def forward(self, x):
+        """Transform token features while preserving batch and time axes."""
         return self.net(x)
 
 
 class Block(nn.Module):
+    """One pre-normalized residual attention-plus-FFN Transformer block."""
+
     def __init__(self, config: GPTConfig):
+        """Create separate normalization, attention, and MLP sublayers."""
         super().__init__()
 
         self.ln_1 = nn.LayerNorm(config.n_embd)
@@ -88,13 +123,17 @@ class Block(nn.Module):
         self.mlp = MLP(config)
 
     def forward(self, x):
+        """Add attention and MLP updates through residual connections."""
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
         return x
 
 
 class GPT(nn.Module):
+    """A small decoder-only GPT that learns to predict the next joke token."""
+
     def __init__(self, config: GPTConfig):
+        """Build embeddings, the repeated block stack, and vocabulary head."""
         super().__init__()
 
         self.config = config
@@ -113,13 +152,15 @@ class GPT(nn.Module):
 
         self.apply(self._init_weights)
 
-        # Weight tying: common GPT trick.
+        # Tying these matrices shares token input/output representations and
+        # reduces parameters; both module names remain in the state dict.
         self.lm_head.weight = self.token_embedding.weight
 
         n_params = sum(p.numel() for p in self.parameters())
         print(f"Model parameters: {n_params / 1e6:.2f}M")
 
     def _init_weights(self, module):
+        """Initialize linear and embedding weights with a small normal scale."""
         if isinstance(module, nn.Linear):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
@@ -130,6 +171,11 @@ class GPT(nn.Module):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
     def forward(self, idx, targets=None):
+        """Return vocabulary logits and optional shifted-token cross-entropy.
+
+        Causal masking allows all positions to be processed together while
+        each prediction can depend only on its preceding context.
+        """
         B, T = idx.shape
 
         if T > self.config.block_size:
@@ -168,6 +214,18 @@ class GPT(nn.Module):
         temperature: float = 0.9,
         top_k: int | None = 50,
     ):
+        """Autoregressively sample tokens, cropping input to the context window.
+
+        At each step the model predicts a distribution for the next token;
+        temperature and top-k alter sampling, then the selected token is
+        appended so it can condition the following prediction (Part IV.14).
+        """
+        if temperature < 0:
+            raise ValueError("temperature must be zero or greater.")
+        if max_new_tokens < 0:
+            raise ValueError("max_new_tokens must be zero or greater.")
+        if top_k is not None and top_k <= 0:
+            raise ValueError("top_k must be positive or None.")
         for _ in range(max_new_tokens):
             idx_cond = idx[:, -self.config.block_size:]
 

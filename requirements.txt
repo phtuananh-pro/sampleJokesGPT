@@ -1,2 +1,9 @@
-torch
-tokenizers
+# Windows/Linux use the CUDA-enabled PyTorch build, which also runs on CPU.
+numpy>=1.26
+torch==2.15.0+cu132; sys_platform == "win32"
+torch==2.15.0+cu132; sys_platform == "linux"
+torch>=2.15; sys_platform == "darwin"
+tokenizers>=0.21
+
+# The CUDA runtime is included in the Windows/Linux PyTorch wheel.
+--extra-index-url https://download.pytorch.org/whl/cu132
