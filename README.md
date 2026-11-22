@@ -187,6 +187,16 @@ python -m src.chat --model_dir .\models\jokes_demo --attempts 20 --max_new_token
 
 Evaluate on a small fixed list of generic and topic-specific questions. Check each generated answer for (1) topic relevance, (2) a complete setup–punchline structure, and (3) readable language. Record failures, not just examples that look good.
 
+## Focused tests
+
+Run the fast regression checks after installing dependencies:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+These tests verify parsing, topic routing, joke-level split isolation, assistant-only loss masks, and EOS stopping. They do **not** establish humor or model quality; test actual generated jokes separately after retraining.
+
 ## What this tutorial demonstrates
 
 | Part IV idea | Where to see it |
