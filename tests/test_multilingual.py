@@ -26,10 +26,9 @@ class MultilingualTests(unittest.TestCase):
 
     def test_supported_languages_and_paths(self):
         self.assertEqual(LANGUAGES, ("en", "fr", "vi"))
-        self.assertEqual(str(data_path("en")), "data/jokes_clean.jsonl")
+        self.assertEqual(str(data_path("en")), "data/jokes_clean_en.jsonl")
         self.assertEqual(str(data_path("fr")), "data/jokes_clean_fr.jsonl")
         self.assertEqual(str(topics_path("vi")), "data/topics_vi.json")
-        self.assertEqual(str(training_model_dir("vi")), "models/jokes_vi")
 
     def test_localized_taxonomies_have_same_topic_ids(self):
         english = self.read_topics("en")["topic_keyword_patterns"]

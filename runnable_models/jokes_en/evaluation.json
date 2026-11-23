@@ -1,0 +1,113 @@
+{
+  "language": "en",
+  "count": 20,
+  "status_counts": {
+    "general": 4,
+    "topic": 16,
+    "fallback": 0,
+    "incomplete": 0
+  },
+  "results": [
+    {
+      "prompt": "Tell me a joke.",
+      "status": "general",
+      "answer": "The gardener was always in a good mood. Every day was a fresh start."
+    },
+    {
+      "prompt": "Tell me a pun.",
+      "status": "general",
+      "answer": "The sandals were so breezy. They were open."
+    },
+    {
+      "prompt": "Tell me a dad joke.",
+      "status": "general",
+      "answer": "Why did the pizza chef get locked out? He had gnocchi!"
+    },
+    {
+      "prompt": "Tell me a joke about programmers.",
+      "status": "topic",
+      "answer": "Why did the git tag get a tattoo? To mark a release!"
+    },
+    {
+      "prompt": "Joke about teachers.",
+      "status": "topic",
+      "answer": "Why did the music teacher go to the police? Because of the treble!"
+    },
+    {
+      "prompt": "Tell me a joke about dogs.",
+      "status": "topic",
+      "answer": "What do you call an alligator in a vest? A detective-gator!"
+    },
+    {
+      "prompt": "Tell me a joke about cats.",
+      "status": "topic",
+      "answer": "What do you call a cow with three legs? Lean beef!"
+    },
+    {
+      "prompt": "Tell me a joke about books.",
+      "status": "topic",
+      "answer": "The math book felt sad for the protractor. It had so many angles to deal with."
+    },
+    {
+      "prompt": "Tell me a joke about food.",
+      "status": "topic",
+      "answer": "I didn't fight my way to the top of the food chain to be a vegetarian."
+    },
+    {
+      "prompt": "Tell me a joke about music.",
+      "status": "topic",
+      "answer": "I used to be a musician but I couldn't compose myself."
+    },
+    {
+      "prompt": "Tell me a joke about math.",
+      "status": "topic",
+      "answer": "Why was the math book sad? It had too many problems."
+    },
+    {
+      "prompt": "Tell me a joke about birds.",
+      "status": "topic",
+      "answer": "I tried to be a ornithologist, but the birds just flew away."
+    },
+    {
+      "prompt": "Tell me a joke about doctors.",
+      "status": "topic",
+      "answer": "Why did the computer go to the doctor? Because it had a virus!"
+    },
+    {
+      "prompt": "Tell me a joke about the weather.",
+      "status": "topic",
+      "answer": "What do you call a dinosaur that eats ice cream? A Tyrann-oh-sore us!"
+    },
+    {
+      "prompt": "Tell me a joke about space.",
+      "status": "general",
+      "answer": "My system sends me an alert every time something goes wrong. I get about 10 alerts per minute!"
+    },
+    {
+      "prompt": "Tell me a joke about sports.",
+      "status": "topic",
+      "answer": "Why did the wizard take up baseball? He wanted to improve his batting spell!"
+    },
+    {
+      "prompt": "Tell me a joke about travel.",
+      "status": "topic",
+      "answer": "I was gonna tell a time-travel joke, but you guys didn't like it."
+    },
+    {
+      "prompt": "Tell me a joke about cooking.",
+      "status": "topic",
+      "answer": "Why did the cookie go to the hospital? It felt crumbly!"
+    },
+    {
+      "prompt": "Tell me a joke about the ocean.",
+      "status": "topic",
+      "answer": "I'd tell you a joke about the ocean, but it's too deep."
+    },
+    {
+      "prompt": "Tell me a joke about computers.",
+      "status": "topic",
+      "answer": "Why did the computer scientist break up with his girlfriend? She had too many issues!"
+    }
+  ],
+  "limits": "EOS and lexical topicality are not human humor-quality assessments."
+}

@@ -1,4 +1,4 @@
-# jokesGPT — a Transformer joke chatbot
+# jokesGPT - a Transformer joke chatbot
 
 A runnable companion to **Part IV (Transformers)** of the [Frontier Models guide](https://frontiermodels.guide). Train a small **decoder-only Transformer from scratch** to answer requests with complete, topic-relevant jokes.
 
@@ -25,10 +25,10 @@ Both [sampleGPT](https://github.com/phtuananh-pro/sampleGPT) and this repository
 ```text
 jokesGPT/
 ├── data/
-│   ├── jokes_clean.jsonl        # 1,440 curated English jokes
+│   ├── jokes_clean_en.jsonl        # 1,440 curated English jokes
 │   ├── jokes_clean_fr.jsonl     # 69 draft French adaptations (pilot)
 │   ├── jokes_clean_vi.jsonl     # 69 draft Vietnamese adaptations (pilot)
-│   ├── topics.json              # English topic patterns
+│   ├── topics_en.json           # English topic patterns
 │   ├── topics_fr.json           # French labels and keyword patterns
 │   └── topics_vi.json           # Vietnamese labels and keyword patterns
 ├── src/
@@ -40,19 +40,19 @@ jokesGPT/
 │   ├── chat.py                  # joke generation with no retrieval
 │   └── evaluate.py              # generation diagnostics
 ├── runnable_models/
-│   └── jokes_en/                # English checkpoint metadata/tokenizer
+│   └── jokes_en/                # English trained model
+│   └── jokes_fr/                # French trained model
+│   └── jokes_vi/                # Vietnamese trained model
 ├── tests/
 ├── requirements.txt
 └── README.md
 ```
 
-Training creates separate local folders `models/jokes_en`, `models/jokes_fr`, and `models/jokes_vi`. These outputs are ignored by Git.
-
 ## Install
 
 Python **3.11+** is recommended.
 
-**Windows PowerShell**
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -60,7 +60,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-**macOS / Linux**
+macOS / Linux:
 
 ```bash
 python3 -m venv .venv
@@ -72,8 +72,12 @@ python -m pip install -r requirements.txt
 
 ## Run an already trained model
 
-```powershell
-python -m src.chat -l en --model_dir runnable_models/jokes_en
+```bash
+python -m src.chat -l en --model_dir runnable_models/jokes_en # English
+
+python -m src.chat -l fr --model_dir runnable_models/jokes_fr # French
+
+python -m src.chat -l vi --model_dir runnable_models/jokes_vi # Vietnamese
 ```
 
 For a fresh clone, the folder must contain **`model.pt`**, `tokenizer.json`, and `config.json`. **The English `model.pt` is not currently tracked in the repository**, although its configuration and tokenizer are; copy your trained weights into `runnable_models/jokes_en/model.pt` and commit them to make the example genuinely runnable without training. The updated `.gitignore` permits `runnable_models/*/model.pt`.
@@ -95,32 +99,30 @@ Each JSONL record contains:
 - `style`: humor format, such as pun, one-liner or dad joke.
 - `topics`: zero or more proposed **subject** labels, such as programming or food.
 
-The English dataset is already deduplicated and automatically screened. **It has not received exhaustive human review; topic labels and safety screening may be imperfect.** There is **no cleaning script to run**.
-
 ### French and Vietnamese datasets
 
 - `data/jokes_clean_fr.jsonl`: **69 AI-drafted French adaptations**, retaining `source_index` for traceability.
 - `data/jokes_clean_vi.jsonl`: **69 AI-drafted Vietnamese adaptations**, retaining the same source indices.
 - `data/topics_fr.json` and `topics_vi.json`: all **49 stable topic IDs**, with localized labels and keyword patterns.
 
-**Translation status: PILOT — not yet native-speaker validated.** These are draft adapted subsets, **not full translations of the 1,440 English jokes**. Many English puns cannot be translated literally while keeping the punchline. Have native speakers review the localized jokes and expand these corpora before claiming comparable chatbot quality. The program does not silently fall back to English jokes.
+These are draft adapted subsets, **not full translations of the 1,440 English jokes**. Many English puns cannot be translated literally while keeping the punchline. The program does not silently fall back to English jokes.
 
 ## Train
 
 Choose a language with `-l` / `--language` (default: `en`). Each language uses its own data, topic taxonomy, trained tokenizer, and checkpoint.
 
-```powershell
-python -m src.train -l en --device auto
-python -m src.train -l fr --device auto
-python -m src.train -l vi --device auto
+```bash
+python -m src.train -l en --device auto --out_dir models/jokes_en
+python -m src.train -l fr --device auto --out_dir models/jokes_fr
+python -m src.train -l vi --device auto --out_dir models/jokes_vi
 ```
 
 Training reads the selected JSONL and taxonomy, builds complete conversations, learns a byte-level BPE tokenizer, and saves the best checkpoint under `models/jokes_<language>/`. An existing folder requires confirmation before overwrite. Use `--overwrite` to replace it without prompting. **French/Vietnamese are small teaching pilots**; their generated humor will be less varied than English.
 
 For a short code **smoke test** (not a useful trained chatbot):
 
-```powershell
-python -m src.train -l fr --device cpu --max_iters 3 --eval_interval 1 --eval_iters 1 --n_layer 2 --n_embd 128 --batch_size 2 --out_dir models/smoke_fr
+```bash
+python -m src.train -l en --device cpu --max_iters 3 --eval_interval 1 --eval_iters 1 --n_layer 2 --n_embd 128 --batch_size 2 --out_dir models/smoke_en
 ```
 
 ### Model output folder
@@ -140,20 +142,20 @@ These three files are sufficient for inference. The source JSONL is not loaded d
 
 | Hardware | Example | Rough duration |
 |---|---|---|
-| Older CPU | Intel i7-5820K | 4–18 hours |
-| High-end desktop CPU | Intel i7-12700K / Ryzen 9 5900X | 1–6 hours |
+| Older CPU | Intel 5th-10th generation | 4–18 hours |
+| High-end desktop CPU | Intel 13th-14th / AMD Zen5 | 1–6 hours |
 | Entry-level NVIDIA GPU | GTX 1660 / RTX 3050 | 1–5 hours |
-| Midrange NVIDIA GPU | RTX 3060 / RTX 4060 | 20 minutes–2 hours |
-| High-end NVIDIA GPU | RTX 4090 / RTX 5090 | 10–60 minutes |
+| Midrange NVIDIA GPU | RTX 3060 / RTX 4060 | 15-30 minutes |
+| High-end NVIDIA GPU | RTX 4090 / RTX 5090 | 5–10 minutes |
 
 Use your console's measured ETA instead of treating these estimates as guarantees.
 
 ## Chat
 
-```powershell
-python -m src.chat -l en --device auto
-python -m src.chat -l fr --device auto
-python -m src.chat -l vi --device auto
+```bash
+python -m src.chat -l en --device auto  --model_dir models/jokes_en
+python -m src.chat -l fr --device auto  --model_dir models/jokes_fr
+python -m src.chat -l vi --device auto  --model_dir models/jokes_vi
 ```
 
 Chat selects the corresponding `models/jokes_<language>` checkpoint if trained locally, or a complete `runnable_models/jokes_<language>` checkpoint when available. Use `--model_dir` to select a specific model folder. The checkpoint language must match `-l`.
@@ -175,7 +177,7 @@ French and Vietnamese use localized prompts and speaker labels. Type `exit`, `qu
 
 ## Evaluate and test
 
-```powershell
+```bash
 python -m unittest discover -s tests -v
 python -m src.evaluate -l en --device auto
 python -m src.evaluate -l fr --device auto
@@ -238,10 +240,6 @@ This is deliberately **lexical routing**, not semantic understanding or retrieva
 
 This is a small model trained from scratch on a small corpus. It can memorize, mix punchlines, produce imperfect or off-topic jokes, and occasionally fail to finish. EOS and lexical topic checks cannot guarantee good humor or safe content. The educational value is understanding how a basic Transformer can be trained as a **useful but imperfect chatbot**.
 
-## Acknowledgements
-
-The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/karpathy/minGPT), [nanoGPT](https://github.com/karpathy/nanoGPT), and [Neural Networks: Zero to Hero](https://karpathy.ai/zero-to-hero.html), as well as [Part IV of the Frontier Models guide](https://frontiermodels.guide).
-
 ## Training arguments
 
 `python -m src.train --help` lists all options. Language-dependent defaults resolve automatically.
@@ -286,3 +284,7 @@ The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/kar
 | `--temperature` | 0.0 | Body sampling; 0 uses greedy decoding |
 | `--top_k` | 20 | Limit token sampling to highest-probability options |
 | `--verbose` | off | Print detected topic, status and response latency |
+
+## Acknowledgements
+
+The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/karpathy/minGPT), [nanoGPT](https://github.com/karpathy/nanoGPT), and [Neural Networks: Zero to Hero](https://karpathy.ai/zero-to-hero.html), as well as [Part IV of the Frontier Models guide](https://frontiermodels.guide).

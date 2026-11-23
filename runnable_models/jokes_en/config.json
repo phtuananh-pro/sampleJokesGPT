@@ -8,9 +8,9 @@
     "dropout": 0.1
   },
   "training": {
-    "data": "data/jokes_clean.jsonl",
-    "topics": "data/topics.json",
-    "out_dir": "models/jokes_v3",
+    "data": "data/jokes_clean_en.jsonl",
+    "topics": "data/topics_en.json",
+    "out_dir": "models/jokes_en",
     "device": "cuda",
     "max_iters": 12000,
     "batch_size": 24,

@@ -1,0 +1,6201 @@
+{
+  "version": "1.0",
+  "truncation": null,
+  "padding": null,
+  "added_tokens": [
+    {
+      "id": 0,
+      "content": "<|unk|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 1,
+      "content": "<|pad|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 2,
+      "content": "<|bos|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 3,
+      "content": "<|user|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 4,
+      "content": "<|assistant|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 5,
+      "content": "<|eos|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 6,
+      "content": "<|j0008|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 7,
+      "content": "<|j0014|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 8,
+      "content": "<|j0066|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 9,
+      "content": "<|j0031|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 10,
+      "content": "<|j0035|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 11,
+      "content": "<|j0030|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 12,
+      "content": "<|j0005|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 13,
+      "content": "<|j0009|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 14,
+      "content": "<|j0039|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 15,
+      "content": "<|j0003|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 16,
+      "content": "<|j0064|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 17,
+      "content": "<|j0043|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 18,
+      "content": "<|j0052|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 19,
+      "content": "<|j0053|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 20,
+      "content": "<|j0000|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 21,
+      "content": "<|j0054|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 22,
+      "content": "<|j0026|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 23,
+      "content": "<|j0028|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 24,
+      "content": "<|j0062|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 25,
+      "content": "<|j0033|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 26,
+      "content": "<|j0041|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 27,
+      "content": "<|j0024|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 28,
+      "content": "<|j0018|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 29,
+      "content": "<|j0063|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 30,
+      "content": "<|j0057|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 31,
+      "content": "<|j0034|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 32,
+      "content": "<|j0002|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 33,
+      "content": "<|j0017|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 34,
+      "content": "<|j0012|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 35,
+      "content": "<|j0016|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 36,
+      "content": "<|j0037|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 37,
+      "content": "<|j0020|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 38,
+      "content": "<|j0010|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 39,
+      "content": "<|j0015|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 40,
+      "content": "<|j0029|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 41,
+      "content": "<|j0007|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 42,
+      "content": "<|j0038|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 43,
+      "content": "<|j0045|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 44,
+      "content": "<|j0001|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 45,
+      "content": "<|j0061|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 46,
+      "content": "<|j0047|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 47,
+      "content": "<|j0050|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 48,
+      "content": "<|j0022|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 49,
+      "content": "<|j0056|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 50,
+      "content": "<|j0059|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 51,
+      "content": "<|j0032|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 52,
+      "content": "<|j0004|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 53,
+      "content": "<|j0060|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 54,
+      "content": "<|j0040|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 55,
+      "content": "<|j0027|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 56,
+      "content": "<|j0006|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 57,
+      "content": "<|j0023|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 58,
+      "content": "<|j0055|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 59,
+      "content": "<|j0065|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 60,
+      "content": "<|j0048|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 61,
+      "content": "<|j0013|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 62,
+      "content": "<|j0044|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 63,
+      "content": "<|j0025|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 64,
+      "content": "<|j0019|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 65,
+      "content": "<|j0058|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 66,
+      "content": "<|j0067|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 67,
+      "content": "<|j0049|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 68,
+      "content": "<|j0042|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 69,
+      "content": "<|j0021|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 70,
+      "content": "<|j0046|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 71,
+      "content": "<|j0068|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 72,
+      "content": "<|j0036|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 73,
+      "content": "<|j0011|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    },
+    {
+      "id": 74,
+      "content": "<|j0051|>",
+      "single_word": false,
+      "lstrip": false,
+      "rstrip": false,
+      "normalized": false,
+      "special": true
+    }
+  ],
+  "normalizer": null,
+  "pre_tokenizer": {
+    "type": "ByteLevel",
+    "add_prefix_space": false,
+    "trim_offsets": true,
+    "use_regex": true
+  },
+  "post_processor": null,
+  "decoder": {
+    "type": "ByteLevel",
+    "add_prefix_space": true,
+    "trim_offsets": true,
+    "use_regex": true
+  },
+  "model": {
+    "type": "BPE",
+    "dropout": null,
+    "unk_token": "<|unk|>",
+    "continuing_subword_prefix": null,
+    "end_of_word_suffix": null,
+    "fuse_unk": false,
+    "byte_fallback": false,
+    "ignore_merges": false,
+    "vocab": {
+      "<|unk|>": 0,
+      "<|pad|>": 1,
+      "<|bos|>": 2,
+      "<|user|>": 3,
+      "<|assistant|>": 4,
+      "<|eos|>": 5,
+      "<|j0008|>": 6,
+      "<|j0014|>": 7,
+      "<|j0066|>": 8,
+      "<|j0031|>": 9,
+      "<|j0035|>": 10,
+      "<|j0030|>": 11,
+      "<|j0005|>": 12,
+      "<|j0009|>": 13,
+      "<|j0039|>": 14,
+      "<|j0003|>": 15,
+      "<|j0064|>": 16,
+      "<|j0043|>": 17,
+      "<|j0052|>": 18,
+      "<|j0053|>": 19,
+      "<|j0000|>": 20,
+      "<|j0054|>": 21,
+      "<|j0026|>": 22,
+      "<|j0028|>": 23,
+      "<|j0062|>": 24,
+      "<|j0033|>": 25,
+      "<|j0041|>": 26,
+      "<|j0024|>": 27,
+      "<|j0018|>": 28,
+      "<|j0063|>": 29,
+      "<|j0057|>": 30,
+      "<|j0034|>": 31,
+      "<|j0002|>": 32,
+      "<|j0017|>": 33,
+      "<|j0012|>": 34,
+      "<|j0016|>": 35,
+      "<|j0037|>": 36,
+      "<|j0020|>": 37,
+      "<|j0010|>": 38,
+      "<|j0015|>": 39,
+      "<|j0029|>": 40,
+      "<|j0007|>": 41,
+      "<|j0038|>": 42,
+      "<|j0045|>": 43,
+      "<|j0001|>": 44,
+      "<|j0061|>": 45,
+      "<|j0047|>": 46,
+      "<|j0050|>": 47,
+      "<|j0022|>": 48,
+      "<|j0056|>": 49,
+      "<|j0059|>": 50,
+      "<|j0032|>": 51,
+      "<|j0004|>": 52,
+      "<|j0060|>": 53,
+      "<|j0040|>": 54,
+      "<|j0027|>": 55,
+      "<|j0006|>": 56,
+      "<|j0023|>": 57,
+      "<|j0055|>": 58,
+      "<|j0065|>": 59,
+      "<|j0048|>": 60,
+      "<|j0013|>": 61,
+      "<|j0044|>": 62,
+      "<|j0025|>": 63,
+      "<|j0019|>": 64,
+      "<|j0058|>": 65,
+      "<|j0067|>": 66,
+      "<|j0049|>": 67,
+      "<|j0042|>": 68,
+      "<|j0021|>": 69,
+      "<|j0046|>": 70,
+      "<|j0068|>": 71,
+      "<|j0036|>": 72,
+      "<|j0011|>": 73,
+      "<|j0051|>": 74,
+      "!": 75,
+      "\"": 76,
+      "#": 77,
+      "$": 78,
+      "%": 79,
+      "&": 80,
+      "'": 81,
+      "(": 82,
+      ")": 83,
+      "*": 84,
+      "+": 85,
+      ",": 86,
+      "-": 87,
+      ".": 88,
+      "/": 89,
+      "0": 90,
+      "1": 91,
+      "2": 92,
+      "3": 93,
+      "4": 94,
+      "5": 95,
+      "6": 96,
+      "7": 97,
+      "8": 98,
+      "9": 99,
+      ":": 100,
+      ";": 101,
+      "<": 102,
+      "=": 103,
+      ">": 104,
+      "?": 105,
+      "@": 106,
+      "A": 107,
+      "B": 108,
+      "C": 109,
+      "D": 110,
+      "E": 111,
+      "F": 112,
+      "G": 113,
+      "H": 114,
+      "I": 115,
+      "J": 116,
+      "K": 117,
+      "L": 118,
+      "M": 119,
+      "N": 120,
+      "O": 121,
+      "P": 122,
+      "Q": 123,
+      "R": 124,
+      "S": 125,
+      "T": 126,
+      "U": 127,
+      "V": 128,
+      "W": 129,
+      "X": 130,
+      "Y": 131,
+      "Z": 132,
+      "[": 133,
+      "\\": 134,
+      "]": 135,
+      "^": 136,
+      "_": 137,
+      "`": 138,
+      "a": 139,
+      "b": 140,
+      "c": 141,
+      "d": 142,
+      "e": 143,
+      "f": 144,
+      "g": 145,
+      "h": 146,
+      "i": 147,
+      "j": 148,
+      "k": 149,
+      "l": 150,
+      "m": 151,
+      "n": 152,
+      "o": 153,
+      "p": 154,
+      "q": 155,
+      "r": 156,
+      "s": 157,
+      "t": 158,
+      "u": 159,
+      "v": 160,
+      "w": 161,
+      "x": 162,
+      "y": 163,
+      "z": 164,
+      "{": 165,
+      "|": 166,
+      "}": 167,
+      "~": 168,
+      "¡": 169,
+      "¢": 170,
+      "£": 171,
+      "¤": 172,
+      "¥": 173,
+      "¦": 174,
+      "§": 175,
+      "¨": 176,
+      "©": 177,
+      "ª": 178,
+      "«": 179,
+      "¬": 180,
+      "®": 181,
+      "¯": 182,
+      "°": 183,
+      "±": 184,
+      "²": 185,
+      "³": 186,
+      "´": 187,
+      "µ": 188,
+      "¶": 189,
+      "·": 190,
+      "¸": 191,
+      "¹": 192,
+      "º": 193,
+      "»": 194,
+      "¼": 195,
+      "½": 196,
+      "¾": 197,
+      "¿": 198,
+      "À": 199,
+      "Á": 200,
+      "Â": 201,
+      "Ã": 202,
+      "Ä": 203,
+      "Å": 204,
+      "Æ": 205,
+      "Ç": 206,
+      "È": 207,
+      "É": 208,
+      "Ê": 209,
+      "Ë": 210,
+      "Ì": 211,
+      "Í": 212,
+      "Î": 213,
+      "Ï": 214,
+      "Ð": 215,
+      "Ñ": 216,
+      "Ò": 217,
+      "Ó": 218,
+      "Ô": 219,
+      "Õ": 220,
+      "Ö": 221,
+      "×": 222,
+      "Ø": 223,
+      "Ù": 224,
+      "Ú": 225,
+      "Û": 226,
+      "Ü": 227,
+      "Ý": 228,
+      "Þ": 229,
+      "ß": 230,
+      "à": 231,
+      "á": 232,
+      "â": 233,
+      "ã": 234,
+      "ä": 235,
+      "å": 236,
+      "æ": 237,
+      "ç": 238,
+      "è": 239,
+      "é": 240,
+      "ê": 241,
+      "ë": 242,
+      "ì": 243,
+      "í": 244,
+      "î": 245,
+      "ï": 246,
+      "ð": 247,
+      "ñ": 248,
+      "ò": 249,
+      "ó": 250,
+      "ô": 251,
+      "õ": 252,
+      "ö": 253,
+      "÷": 254,
+      "ø": 255,
+      "ù": 256,
+      "ú": 257,
+      "û": 258,
+      "ü": 259,
+      "ý": 260,
+      "þ": 261,
+      "ÿ": 262,
+      "Ā": 263,
+      "ā": 264,
+      "Ă": 265,
+      "ă": 266,
+      "Ą": 267,
+      "ą": 268,
+      "Ć": 269,
+      "ć": 270,
+      "Ĉ": 271,
+      "ĉ": 272,
+      "Ċ": 273,
+      "ċ": 274,
+      "Č": 275,
+      "č": 276,
+      "Ď": 277,
+      "ď": 278,
+      "Đ": 279,
+      "đ": 280,
+      "Ē": 281,
+      "ē": 282,
+      "Ĕ": 283,
+      "ĕ": 284,
+      "Ė": 285,
+      "ė": 286,
+      "Ę": 287,
+      "ę": 288,
+      "Ě": 289,
+      "ě": 290,
+      "Ĝ": 291,
+      "ĝ": 292,
+      "Ğ": 293,
+      "ğ": 294,
+      "Ġ": 295,
+      "ġ": 296,
+      "Ģ": 297,
+      "ģ": 298,
+      "Ĥ": 299,
+      "ĥ": 300,
+      "Ħ": 301,
+      "ħ": 302,
+      "Ĩ": 303,
+      "ĩ": 304,
+      "Ī": 305,
+      "ī": 306,
+      "Ĭ": 307,
+      "ĭ": 308,
+      "Į": 309,
+      "į": 310,
+      "İ": 311,
+      "ı": 312,
+      "Ĳ": 313,
+      "ĳ": 314,
+      "Ĵ": 315,
+      "ĵ": 316,
+      "Ķ": 317,
+      "ķ": 318,
+      "ĸ": 319,
+      "Ĺ": 320,
+      "ĺ": 321,
+      "Ļ": 322,
+      "ļ": 323,
+      "Ľ": 324,
+      "ľ": 325,
+      "Ŀ": 326,
+      "ŀ": 327,
+      "Ł": 328,
+      "ł": 329,
+      "Ń": 330,
+      "á»": 331,
+      "Ġc": 332,
+      "<|": 333,
+      "|>": 334,
+      "áº": 335,
+      "Ġch": 336,
+      "Ġt": 337,
+      "ng": 338,
+      "os": 339,
+      "|><|": 340,
+      "Æ°": 341,
+      "Ã´": 342,
+      "Ġm": 343,
+      "Æ°á»": 344,
+      "Ġv": 345,
+      "ĠÄ": 346,
+      "á»ĥ": 347,
+      "Ãł": 348,
+      "á»ĩ": 349,
+      ".<|": 350,
+      "nh": 351,
+      "ĠÄĳ": 352,
+      "Ã´i": 353,
+      "Æ°á»Ŀ": 354,
+      "á»Ļ": 355,
+      "00": 356,
+      "Ġb": 357,
+      "uy": 358,
+      "Æ°á»Ŀi": 359,
+      "si": 360,
+      "á»ĩn": 361,
+      "á»Ļt": 362,
+      "Ġchuy": 363,
+      "Ġchuyá»ĩn": 364,
+      "an": 365,
+      "Ġmá»Ļt": 366,
+      "Ã¡": 367,
+      "st": 368,
+      "ĠcÆ°á»Ŀi": 369,
+      "us": 370,
+      "as": 371,
+      "er": 372,
+      "Ká»ĥ": 373,
+      "bos": 374,
+      "eos": 375,
+      "čĊ": 376,
+      "sist": 377,
+      "ant": 378,
+      "user": 379,
+      "assist": 380,
+      "assistant": 381,
+      "Ã¬": 382,
+      "ĠtÃ´i": 383,
+      "Ġl": 384,
+      "Ġcho": 385,
+      "Ġg": 386,
+      "Ġvá»": 387,
+      "Ġn": 388,
+      "Ã³": 389,
+      "Ġk": 390,
+      "Ġth": 391,
+      "Ã¢": 392,
+      "Ġs": 393,
+      "Ġvá»ģ": 394,
+      "Ġh": 395,
+      "Ġnh": 396,
+      "Ġtr": 397,
+      "Ãª": 398,
+      "á»ĳ": 399,
+      "ao": 400,
+      "!<|": 401,
+      "Ġng": 402,
+      "áº¥": 403,
+      "ĠvÃł": 404,
+      "áº£": 405,
+      "Ġr": 406,
+      "áº¿": 407,
+      "TÃ´i": 408,
+      "á»į": 409,
+      "áº¡": 410,
+      "VÃ¬": 411,
+      "Ġgi": 412,
+      "Ãªn": 413,
+      "Ã¢u": 414,
+      "Sao": 415,
+      "Ã´ng": 416,
+      "Æ¡": 417,
+      "ĠlÃł": 418,
+      "ĠVÃ¬": 419,
+      "áº¯": 420,
+      "ĠcÃ¢u": 421,
+      "ĠÄĳá»": 422,
+      "Ġkh": 423,
+      "Ġx": 424,
+      "Ġd": 425,
+      "á»įc": 426,
+      "ch": 427,
+      "áºŃ": 428,
+      "Ġvi": 429,
+      "..": 430,
+      "Ġp": 431,
+      "ÃŃ": 432,
+      "á»©": 433,
+      "ĠnÃ³": 434,
+      "Ġph": 435,
+      "Ġq": 436,
+      "Æ°á»Ľ": 437,
+      "Ġ'": 438,
+      "áº¥y": 439,
+      "ang": 440,
+      "uá»ĳ": 441,
+      "ĠgÃ¬": 442,
+      "Ãº": 443,
+      "iá»ĥ": 444,
+      "Ã¬nh": 445,
+      "ĠkhÃ´ng": 446,
+      "áº³": 447,
+      "Ġqu": 448,
+      "ĠlÃłm": 449,
+      "Ġcá»": 450,
+      "ĠnhÆ°": 451,
+      "á»Ŀ": 452,
+      "ĠcÃ³": 453,
+      "ĠsÃ¡": 454,
+      "Æ¡i": 455,
+      "Ġcháº³": 456,
+      "Ġcháº³ng": 457,
+      "iá»ĥu": 458,
+      "iáº¿": 459,
+      "á»±": 460,
+      "á»Ł": 461,
+      "003": 462,
+      "Ġbáº£": 463,
+      "Ġhá»įc": 464,
+      "ĥn": 465,
+      "Ġchá»": 466,
+      "002": 467,
+      "Ã¡n": 468,
+      "á»ĭ": 469,
+      "001": 470,
+      "Ã¢y": 471,
+      "Ġá»Ł": 472,
+      "áº§": 473,
+      "004": 474,
+      "ĠÄĳá»ĵ": 475,
+      "á»ĵ": 476,
+      "005": 477,
+      "ĠnÆ°á»Ľ": 478,
+      "áºŃp": 479,
+      "ĠnhÆ°ng": 480,
+      "ĠcÃ¡": 481,
+      "Æ°á»£": 482,
+      "Ġbá»ĳ": 483,
+      "Ġkiá»ĥu": 484,
+      "on": 485,
+      "Ã£": 486,
+      "006": 487,
+      "Ġngh": 488,
+      "ĠÄĥn": 489,
+      "ĠbÃ¡": 490,
+      "'<|": 491,
+      "ai": 492,
+      "Ġsi": 493,
+      "ĠcÃ´": 494,
+      "Æ°á»Ŀng": 495,
+      "000": 496,
+      "...": 497,
+      "Æ°á»£c": 498,
+      "Ġsinh": 499,
+      "á»ĩc": 500,
+      "ĠÄĳi": 501,
+      "ĠnÃł": 502,
+      "ĠsÃ¡ch": 503,
+      "Ġbáº£o": 504,
+      "Ġcáº£": 505,
+      "ĠmÃł": 506,
+      "ĠtrÃ¬nh": 507,
+      "ÃŃnh": 508,
+      "á»£": 509,
+      "ay": 510,
+      "§a": 511,
+      "ĠchÆ¡i": 512,
+      "ĠÄĲ": 513,
+      "ĠÄĳÃ¡": 514,
+      "ĠÄĳÆ°á»£c": 515,
+      "Ġcá»§a": 516,
+      "áº¡c": 517,
+      "áº¯n": 518,
+      "á»©c": 519,
+      "á»ĵi": 520,
+      "Ã¹": 521,
+      "á»«": 522,
+      "Ġcon": 523,
+      "Ġchi": 524,
+      "ĠC": 525,
+      "Ġáº¥y": 526,
+      "Ľi": 527,
+      "á»¥": 528,
+      "Ġto": 529,
+      "ĠláºŃp": 530,
+      "Ġsao": 531,
+      "áº¯t": 532,
+      "á»ı": 533,
+      "áº¥t": 534,
+      "áº¿t": 535,
+      "á»įi": 536,
+      "áº¡n": 537,
+      "Ġdá»±": 538,
+      "Ġviá»ĩc": 539,
+      "áº·": 540,
+      "Ã¡o": 541,
+      "ĠlÃªn": 542,
+      "Ġra": 543,
+      "uá»ĳng": 544,
+      "á»Ŀi": 545,
+      "ĠÄĳang": 546,
+      "ĠthÃ¬": 547,
+      "Ġnhi": 548,
+      "Ġrá»ĵi": 549,
+      "áº¿n": 550,
+      "ĠnÃło": 551,
+      "!'<|": 552,
+      "á»ģ": 553,
+      "ĠÄĳá»įc": 554,
+      "Ġgá»įi": 555,
+      "Ġvá»Ľi": 556,
+      "áº¥u": 557,
+      "ĠviÃªn": 558,
+      "uá»ĳn": 559,
+      "Ġchá»¯": 560,
+      "ĠnÆ°á»Ľc": 561,
+      "ĠbÃ¡nh": 562,
+      "²n": 563,
+      "Ã²n": 564,
+      "Å©": 565,
+      "ĭnh": 566,
+      "ĠtÃŃnh": 567,
+      "ĠÄĳÃ¢y": 568,
+      "Ġbá»ĭ": 569,
+      "ĠÄĳá»ĭnh": 570,
+      "á»«ng": 571,
+      "Ġchim": 572,
+      "ĠN": 573,
+      "á»Ń": 574,
+      "Ãłi": 575,
+      "Ġná»": 576,
+      "Ġngáº¯n": 577,
+      "ĠgiÃ¡o": 578,
+      "ĠtoÃ¡n": 579,
+      "Th": 580,
+      "Ã½": 581,
+      "Ãłnh": 582,
+      "Ġbáº¯t": 583,
+      "Ġbáº¡n": 584,
+      "Ġho": 585,
+      "Ġnháº¡c": 586,
+      "áºŃt": 587,
+      "Ä©": 588,
+      "ĠcÅ©": 589,
+      "Æ°Æ¡": 590,
+      "Ġmang": 591,
+      "Ãły": 592,
+      "Ġká»ĥ": 593,
+      "Ġviáº¿t": 594,
+      "Ġchá»ī": 595,
+      "ĠnÆ°á»Ľng": 596,
+      "Ġcáº£m": 597,
+      "ĠÄĲá»ĥ": 598,
+      "ĠcÅ©ng": 599,
+      "Æ°Æ¡ng": 600,
+      "anh": 601,
+      "ĠM": 602,
+      "ķi": 603,
+      "Ġcá»©": 604,
+      "ĠcÃ²n": 605,
+      "Ãłn": 606,
+      "Ã³c": 607,
+      "Ã¢n": 608,
+      "á»ĳi": 609,
+      "á»ĳng": 610,
+      "áº£i": 611,
+      "Æ°á»Ľc": 612,
+      "áº§u": 613,
+      "Ã©": 614,
+      "Ġti": 615,
+      "ĠÄĳá»ĥ": 616,
+      "ĠÄĳáº¿n": 617,
+      "Ġbu": 618,
+      "Ġbiáº¿": 619,
+      "Ġtháº¥y": 620,
+      "Ãªu": 621,
+      "ĠngÆ°á»Ŀi": 622,
+      "áº¥m": 623,
+      "áº¯c": 624,
+      "Ġxe": 625,
+      "Ãºng": 626,
+      "á»ıi": 627,
+      "ung": 628,
+      "Äĥ": 629,
+      "Ġcao": 630,
+      "ĠcÃ´ng": 631,
+      "Ġlá»": 632,
+      "Ġlá»ĭ": 633,
+      "Ġsá»£": 634,
+      "ĠsÄ©": 635,
+      "ĠxÃº": 636,
+      "ĠphÃŃ": 637,
+      "Ãºt": 638,
+      "áº§y": 639,
+      "ĠnhiÃªn": 640,
+      "Äĥng": 641,
+      "Ġlá»ĭch": 642,
+      "ĠxÃºc": 643,
+      "eo": 644,
+      "iá»ĩ": 645,
+      "ĠTÃ´i": 646,
+      "ĠcÃł": 647,
+      "ĠtáºŃp": 648,
+      "ĠmÃ£": 649,
+      "ĠváºŃt": 650,
+      "Ã¡y": 651,
+      "Ġnáº¥u": 652,
+      "Ġthá»ĥ": 653,
+      "ĠtrÃªn": 654,
+      "ĠngÃły": 655,
+      "áº¡i": 656,
+      "áº¡t": 657,
+      "Ġxuá»ĳng": 658,
+      "ÃŃch": 659,
+      "ĠnÃ³i": 660,
+      "ĠquÃ¡": 661,
+      "Ġnghá»ģ": 662,
+      "Ġnghiá»ĩ": 663,
+      "Ã¹ng": 664,
+      "Ġdá»±a": 665,
+      "Ġnghiá»ĩp": 666,
+      "ong": 667,
+      "Ġy": 668,
+      "Ġuá»ĳng": 669,
+      "áº±": 670,
+      "áº»": 671,
+      "ĠtÃ¬": 672,
+      "ĠtÃªn": 673,
+      "ĠtÆ°á»Ŀng": 674,
+      "Ġtá»«ng": 675,
+      "ĠmÃ³": 676,
+      "ĠÄĳáº§u": 677,
+      "ĠbÃ³": 678,
+      "Ġbay": 679,
+      "ĠlÃ½": 680,
+      "Ġthá»Ŀi": 681,
+      "Ġtrong": 682,
+      "Ãªm": 683,
+      "Ġgian": 684,
+      "Æ¡n": 685,
+      "ĠkhÃ¡": 686,
+      "Ġxá»Ń": 687,
+      "á»©ng": 688,
+      "Ġpháº£i": 689,
+      "uá»ĳt": 690,
+      "ĠcÃ¡c": 691,
+      "ĠÄĳÃ¡p": 692,
+      "Ġná»ķi": 693,
+      "Ġbiáº¿t": 694,
+      "ĠtÃ¬m": 695,
+      "ĠmÃ³n": 696,
+      "ĠbÃ³ng": 697,
+      "«a": 698,
+      "á»¯": 699,
+      "ĠchÃºng": 700,
+      "Ġmáº¥t": 701,
+      "Ġmáº·": 702,
+      "Ġváº": 703,
+      "ĠÄĳá»Ļ": 704,
+      "ĠÄĳÃ¢u": 705,
+      "ĠbÃłi": 706,
+      "Ġgáº·": 707,
+      "Ġvá»«a": 708,
+      "Ġthang": 709,
+      "Ġngáº¡c": 710,
+      "Ġquy": 711,
+      "ĠquÃ¡n": 712,
+      "Ġcá»Ń": 713,
+      "ĠsÃ¡ng": 714,
+      "á»ĵn": 715,
+      "ĠbÃ¡c": 716,
+      "ĠnÃły": 717,
+      "Ã¹a": 718,
+      "ĠNÃ³": 719,
+      "Ġhoa": 720,
+      "Ġbuá»ĵn": 721,
+      "Ġgáº·p": 722,
+      "!'": 723,
+      "?'<|": 724,
+      "am": 725,
+      "gÆ°á»Ŀi": 726,
+      "hi": 727,
+      "ĠcÃ¢y": 728,
+      "ĠtÄĥng": 729,
+      "ĠmÆ¡": 730,
+      "Ġmá»©c": 731,
+      "ĠÄĳÆ°á»Ŀng": 732,
+      "ĠthÆ°": 733,
+      "ĠnhÃł": 734,
+      "ĠnhÃ¡": 735,
+      "ĠnhÃ¢n": 736,
+      "Ġtrung": 737,
+      "áº¥c": 738,
+      "ĠvÃło": 739,
+      "Ġgiá»Ŀ": 740,
+      "Ġgiáº¥c": 741,
+      "ĠdÃ¹ng": 742,
+      "áºŃu": 743,
+      "ĠphÃª": 744,
+      "á»ģu": 745,
+      "em": 746,
+      "ÄĲ": 747,
+      "ĠL": 748,
+      "ĠP": 749,
+      "Ġai": 750,
+      "ĠTh": 751,
+      "Łng": 752,
+      "á»ī": 753,
+      "Ġtá»±": 754,
+      "Ġmá»ĩ": 755,
+      "Ġmáº£": 756,
+      "ĠmÃ¡y": 757,
+      "Æ°á»Łng": 758,
+      "ĠÄĳÃªm": 759,
+      "Ã¬n": 760,
+      "Ġláº¥y": 761,
+      "Ġláº¡i": 762,
+      "Ġvá»£": 763,
+      "Ġnáº±": 764,
+      "Ġkáº»": 765,
+      "Ġthá»©c": 766,
+      "ĠthÃłnh": 767,
+      "ĠthÃŃch": 768,
+      "Ġsá»ĳng": 769,
+      "Ġsuá»ĳt": 770,
+      "ĠhÃ¬nh": 771,
+      "ĠhÆ¡i": 772,
+      "Ġháº¿t": 773,
+      "Ġháº¡t": 774,
+      "ĠtrÆ°á»Ŀng": 775,
+      "ĠrÃ£": 776,
+      "Ġráº¥t": 777,
+      "Ġrá»ĳi": 778,
+      "Ġráº¯c": 779,
+      "áº¡m": 780,
+      "ĠxÆ°á»Łng": 781,
+      "Ġdá»¥": 782,
+      "iá»ĥn": 783,
+      "Ġqua": 784,
+      "Ġquáº£": 785,
+      "ĠÄĳá»ĵng": 786,
+      "ĠcÃ¡ch": 787,
+      "Ġnghá»ī": 788,
+      "ĠÄĲáº¿n": 789,
+      "ĠCÃ´": 790,
+      "Ġná»¯": 791,
+      "ĠMá»Ļt": 792,
+      "Ġtiá»ĩc": 793,
+      "Ġlá»Ľ": 794,
+      "ĠmÃ£i": 795,
+      "ĠyÃªu": 796,
+      "Ġmá»ĩt": 797,
+      "Ġmáº£ng": 798,
+      "Ġnáº±m": 799,
+      "Ġdá»¥c": 800,
+      "Ch": 801,
+      "qu": 802,
+      "uá»Ļ": 803,
+      "Äĥn": 804,
+      "Ŀi": 805,
+      "á»§": 806,
+      "Ġcuá»ĳn": 807,
+      "Ġcuá»Ļ": 808,
+      "Ġchiáº¿": 809,
+      "ĠchÃŃnh": 810,
+      "ĠchÃ¢n": 811,
+      "Ġtiáº¿": 812,
+      "Ġtay": 813,
+      "Ġtá»«": 814,
+      "Ġtá»ı": 815,
+      "Ġmáº¡": 816,
+      "ĠmÃ¬nh": 817,
+      "Ġmai": 818,
+      "Ġmuá»ĳn": 819,
+      "ĠÄĳá»ĩ": 820,
+      "ĠÄĳÃ¹a": 821,
+      "ĠlÃ¡": 822,
+      "Ġlá»±": 823,
+      "Ġvá»¡": 824,
+      "Ġsá»ĳ": 825,
+      "Ġhiá»ĥu": 826,
+      "ĠhÃłnh": 827,
+      "Ġhá»ıi": 828,
+      "Ġtrai": 829,
+      "Ġtrá»¥": 830,
+      "Ġtrá»©ng": 831,
+      "á»ĳc": 832,
+      "Ġre": 833,
+      "Ġgia": 834,
+      "ĠÄĳá»Ŀi": 835,
+      "Ġphi": 836,
+      "á»ĭp": 837,
+      "áº§n": 838,
+      "á»£n": 839,
+      "ĠÄĳÃ¡nh": 840,
+      "Ġchia": 841,
+      "ĠtoÃłn": 842,
+      "ĠphÃŃm": 843,
+      "Ġmáº·t": 844,
+      "Ġchiáº¿c": 845,
+      "Ġlá»±c": 846,
+      "Bá»©c": 847,
+      "Háº": 848,
+      "Má»Ļt": 849,
+      "Ru": 850,
+      "TÃŃ": 851,
+      "Vá»£": 852,
+      "ia": 853,
+      "¹n": 854,
+      "ĠÃ¡": 855,
+      "ĠTÃŃ": 856,
+      "ĠVá»£": 857,
+      "Ĺi": 858,
+      "á»ŀ": 859,
+      "Ġcáº¥m": 860,
+      "ĠcáºŃu": 861,
+      "ĠchÃ¬": 862,
+      "Ġcháº¿": 863,
+      "ĠchÃ¢u": 864,
+      "Ġcháº¥u": 865,
+      "ĠchÆ°Æ¡ng": 866,
+      "ĠÄĳáº¥y": 867,
+      "ĠbÃº": 868,
+      "Ġbá»©c": 869,
+      "ĠbÃºt": 870,
+      "Ġláº¯": 871,
+      "ĠgÃ³c": 872,
+      "Ġkia": 873,
+      "ĠsÃłn": 874,
+      "ĠhÃ³c": 875,
+      "ĠnhÃ©": 876,
+      "Ġnhá»¯": 877,
+      "ĠtrÃł": 878,
+      "Ġngá»ĵi": 879,
+      "ĠgiÆ°á»Ŀng": 880,
+      "ĠdÆ°á»Ľ": 881,
+      "Ġviá»ĩn": 882,
+      "Ġpha": 883,
+      "ĠphÃ©": 884,
+      "0034": 885,
+      "0039": 886,
+      "Ġbáº£ng": 887,
+      "0025": 888,
+      "0027": 889,
+      "0019": 890,
+      "0047": 891,
+      "0006": 892,
+      "ĠCÃ³": 893,
+      "Ġnhiá»ģu": 894,
+      "ĠNgÆ°á»Ŀi": 895,
+      "TháºŃt": 896,
+      "Ġlá»Ĺi": 897,
+      "Ġváº½": 898,
+      "Ġcá»Ńu": 899,
+      "Háº¹n": 900,
+      "Rust": 901,
+      "ĠbÃºa": 902,
+      "Ġláº¯m": 903,
+      "Ġnhá»¯ng": 904,
+      "ĠdÆ°á»Ľi": 905,
+      "ĠphÃ©p": 906,
+      "?<|": 907,
+      "Ap": 908,
+      "BÃłi": 909,
+      "CÃ¡": 910,
+      "Cuá»ĳn": 911,
+      "Gi": 912,
+      "Lai": 913,
+      "MÃ¡y": 914,
+      "So": 915,
+      "Tr": 916,
+      "Xe": 917,
+      "bÃ¡": 918,
+      "ghi": 919,
+      "hon": 920,
+      "inh": 921,
+      "le": 922,
+      "ni": 923,
+      "náº¥m": 924,
+      "or": 925,
+      "oÃłi": 926,
+      "oáº¡i": 927,
+      "ple": 928,
+      "thon": 929,
+      "uá»": 930,
+      "ython": 931,
+      "«n": 932,
+      "«u": 933,
+      "Ã¨": 934,
+      "Ãį": 935,
+      "Ġan": 936,
+      "ĠÃ¡n": 937,
+      "Ġem": 938,
+      "ĠAp": 939,
+      "ĠGi": 940,
+      "ĠSo": 941,
+      "ģu": 942,
+      "ĳn": 943,
+      "á»ħ": 944,
+      "á»Ľi": 945,
+      "ĠcÆ°": 946,
+      "ĠcÆ¡": 947,
+      "Ġcáº¯n": 948,
+      "Ġcá»ĳi": 949,
+      "Ġcam": 950,
+      "Ġchá»Ŀ": 951,
+      "ĠchÃły": 952,
+      "Ġchanh": 953,
+      "Ġchá»©ng": 954,
+      "Ġtá»©": 955,
+      "ĠtÃ¡o": 956,
+      "Ġtanh": 957,
+      "Ġtung": 958,
+      "Ġtáº¡m": 959,
+      "Ġmá»įc": 960,
+      "Ġmáº¯t": 961,
+      "Ġmá»Ŀi": 962,
+      "Ġminh": 963,
+      "Ġmá»Ľi": 964,
+      "ĠvÆ°á»Ŀ": 965,
+      "ĠvÃ¬": 966,
+      "ĠÄĳÃ³": 967,
+      "ĠÄĳáº¿": 968,
+      "ĠÄĳáº¡": 969,
+      "ĠÄĳÆ¡n": 970,
+      "ĠÄĳuá»": 971,
+      "Ġbao": 972,
+      "ĠbÃ¬nh": 973,
+      "ĠbÃ£": 974,
+      "ĠbÃ¹": 975,
+      "ĠbÄĥng": 976,
+      "Ġbiá»ĥn": 977,
+      "ĠbÃ¨": 978,
+      "ushi": 979,
+      "ĠlÃ´ng": 980,
+      "Ġlon": 981,
+      "ĠlÆ°Æ¡ng": 982,
+      "ĠloÃłi": 983,
+      "ĠgÃł": 984,
+      "Ġgáº¡": 985,
+      "Ġvá»ĳn": 986,
+      "ĠnÆ¡i": 987,
+      "Ġnáº¥m": 988,
+      "ĠnÃºt": 989,
+      "Ã³a": 990,
+      "ĠkÃª": 991,
+      "Ġkiáº¿": 992,
+      "Ġkeo": 993,
+      "ĠkÃŃch": 994,
+      "ĠthÃº": 995,
+      "Ġthá»£": 996,
+      "Ġthá»ĳng": 997,
+      "ĠthÆ°á»Ľc": 998,
+      "Ġtháº§y": 999,
+      "Ġsá»Ń": 1000,
+      "ĠsÃ³c": 1001,
+      "Ġsushi": 1002,
+      "Ġháº³": 1003,
+      "Ġhai": 1004,
+      "ĠnhÃ¬n": 1005,
+      "ĠtrÃ´ng": 1006,
+      "ĠtrÃºng": 1007,
+      "ĠngÃ´i": 1008,
+      "Ġngá»į": 1009,
+      "Ġngá»Ŀ": 1010,
+      "ĠngÃ£": 1011,
+      "ĠngÆ°á»£c": 1012,
+      "Ġngoáº¡i": 1013,
+      "ĠrÆ¡i": 1014,
+      "Ġráº¯n": 1015,
+      "Ġrá»¥": 1016,
+      "Ġrá»Ŀi": 1017,
+      "Ġráº§u": 1018,
+      "áº¡y": 1019,
+      "ĠgiÃ²n": 1020,
+      "Ġgiáº£i": 1021,
+      "Ġgieo": 1022,
+      "Ġgiá»¯": 1023,
+      "áº¯p": 1024,
+      "ĠÄĳá»§": 1025,
+      "ĠÄĳá»ģu": 1026,
+      "Ġkhá»ıi": 1027,
+      "ĠkhÃ³a": 1028,
+      "Ġkháº¯p": 1029,
+      "ĠxÃ¢y": 1030,
+      "ĠdÃ¡n": 1031,
+      "ĠdÃŃnh": 1032,
+      "Ġdá»«ng": 1033,
+      "Ġdá»ħ": 1034,
+      "Ġdáº¡y": 1035,
+      "Ġquáº§y": 1036,
+      "Ġcá»«u": 1037,
+      "0032": 1038,
+      "0035": 1039,
+      "0036": 1040,
+      "0038": 1041,
+      "Ġbáº£n": 1042,
+      "0021": 1043,
+      "0024": 1044,
+      "0028": 1045,
+      "0010": 1046,
+      "0012": 1047,
+      "0015": 1048,
+      "0016": 1049,
+      "0042": 1050,
+      "0044": 1051,
+      "0049": 1052,
+      "ĠÄĳá»ĵn": 1053,
+      "0051": 1054,
+      "0052": 1055,
+      "0053": 1056,
+      "0057": 1057,
+      "ĠcÃ¡nh": 1058,
+      "0060": 1059,
+      "0062": 1060,
+      "0063": 1061,
+      "0065": 1062,
+      "0066": 1063,
+      "0009": 1064,
+      "ĠmÃły": 1065,
+      "ĠÄĲá»įc": 1066,
+      "ĠÄĳÃ¡ng": 1067,
+      "ĠCÃ¡": 1068,
+      "ĠCÃ´ng": 1069,
+      "Ġdá»±ng": 1070,
+      "Tháº§y": 1071,
+      "Ġhoáº¡t": 1072,
+      "ĠMay": 1073,
+      "ĠbuÃ´ng": 1074,
+      "ĠkhÃ¡t": 1075,
+      "Ġváº«n": 1076,
+      "ĠÄĳá»Ļng": 1077,
+      "Ġcá»Ńa": 1078,
+      "amb": 1079,
+      "ĠnhÃ¡p": 1080,
+      "ĠnhÃ¡t": 1081,
+      "ÄĲá»«ng": 1082,
+      "ĠLamb": 1083,
+      "ĠPython": 1084,
+      "ĠTháº¿": 1085,
+      "Ġná»¯a": 1086,
+      "Ġlá»Ľp": 1087,
+      "TrÆ°á»Ľc": 1088,
+      "bÃ¡nh": 1089,
+      "ghini": 1090,
+      "orghini": 1091,
+      "Ãįt": 1092,
+      "ĠApple": 1093,
+      "ĠGiá»Ŀ": 1094,
+      "ĠSol": 1095,
+      "ĠcÆ°ng": 1096,
+      "ĠvÆ°á»Ŀn": 1097,
+      "ĠÄĳáº¿m": 1098,
+      "ĠÄĳáº¡p": 1099,
+      "ĠÄĳuá»ķi": 1100,
+      "ĠbÃ£o": 1101,
+      "Ġgáº¡ch": 1102,
+      "Ġkiáº¿m": 1103,
+      "Ġháº³n": 1104,
+      "Ġngá»įt": 1105,
+      "Ġrá»¥m": 1106,
+      "Ġgiá»¯a": 1107,
+      "'.": 1108,
+      ".'<|": 1109,
+      "?'": 1110,
+      "BÃ¡": 1111,
+      "BÃ´ng": 1112,
+      "Báº¡n": 1113,
+      "Cá»©": 1114,
+      "CÃ¢y": 1115,
+      "Ká»ĩ": 1116,
+      "Lá»£n": 1117,
+      "MÃ´": 1118,
+      "MÃ¬": 1119,
+      "Miáº¿": 1120,
+      "Muá»ĳn": 1121,
+      "NgÆ°á»Ŀi": 1122,
+      "Tá»±": 1123,
+      "ew": 1124,
+      "est": 1125,
+      "ge": 1126,
+      "hÃ´": 1127,
+      "hÃ¬n": 1128,
+      "iá»ĩn": 1129,
+      "iÃª": 1130,
+      "iÃªn": 1131,
+      "iew": 1132,
+      "ll": 1133,
+      "oáº¡n": 1134,
+      "ua": 1135,
+      "ull": 1136,
+      "view": 1137,
+      "ym": 1138,
+      "¥n": 1139,
+      "¥p": 1140,
+      "ĠX": 1141,
+      "ĠÃł": 1142,
+      "Ġst": 1143,
+      "ĠÃ¢": 1144,
+      "ĠÃ½": 1145,
+      "ĠÆ°á»Ľc": 1146,
+      "ĠÆ¡n": 1147,
+      "ĠBÃ¡": 1148,
+      "Ġcá»Ļ": 1149,
+      "ĠcÃłnh": 1150,
+      "ĠcÃ¹ng": 1151,
+      "Ġcá»ĳc": 1152,
+      "Ġcáº§n": 1153,
+      "áº½": 1154,
+      "ĠchÃ³": 1155,
+      "ĠchÃº": 1156,
+      "Ġcháº¡m": 1157,
+      "Ġchua": 1158,
+      "Ġta": 1159,
+      "Ġtáº¥t": 1160,
+      "Ġtáº·": 1161,
+      "ĠtÆ°Æ¡ng": 1162,
+      "Ġmer": 1163,
+      "Ġmá»įi": 1164,
+      "Ġmáº¯c": 1165,
+      "ĠmÃ¹a": 1166,
+      "Ġmáº½": 1167,
+      "ĠvÃ´": 1168,
+      "Ġvá»ĩ": 1169,
+      "ĠvÅ©": 1170,
+      "ĠvÄĥn": 1171,
+      "Ãło": 1172,
+      "Ãłu": 1173,
+      "á»ĩm": 1174,
+      "á»ĩnh": 1175,
+      "ĠÄĳa": 1176,
+      "ĠÄĳiá»ĥn": 1177,
+      "á»Ļm": 1178,
+      "0000": 1179,
+      "Ġba": 1180,
+      "Ġbá»Ļ": 1181,
+      "Ġbáº¿": 1182,
+      "ĠbÃ´ng": 1183,
+      "ĠbÃ¡n": 1184,
+      "Ġbá»¥": 1185,
+      "ĠbÃłn": 1186,
+      "ĠbÃ©": 1187,
+      "Ġbáº±": 1188,
+      "Ġbá»ĩnh": 1189,
+      "uyÃªn": 1190,
+      "ĠchuyÃªn": 1191,
+      "ash": 1192,
+      "ĠlÃ£": 1193,
+      "Ġlai": 1194,
+      "ĠlÄĥn": 1195,
+      "ĠgÃ¢y": 1196,
+      "Ġgá»ĳi": 1197,
+      "Ġgym": 1198,
+      "Ġvá»¥n": 1199,
+      "Ġná»¥": 1200,
+      "Ġnuá»ĳt": 1201,
+      "Ġkem": 1202,
+      "Ġká»ĭp": 1203,
+      "Ġthao": 1204,
+      "Ġthiáº¿": 1205,
+      "Ġthay": 1206,
+      "Ġtháº¥t": 1207,
+      "Ġthá»Ń": 1208,
+      "Ġtháº¯c": 1209,
+      "Ġtheo": 1210,
+      "ĠthÃªm": 1211,
+      "Ġthá»§": 1212,
+      "ĠthiÃªn": 1213,
+      "ĠsÃºt": 1214,
+      "Ġsáº»": 1215,
+      "Ġsoáº¡n": 1216,
+      "Ġhay": 1217,
+      "Ġháº¯t": 1218,
+      "ĠhÆ¡n": 1219,
+      "Ġhiá»ĩn": 1220,
+      "ĠhÃłu": 1221,
+      "ĠnháºŃ": 1222,
+      "Ġnháº§": 1223,
+      "Ġnhá»ı": 1224,
+      "Ġnhá»ĭp": 1225,
+      "ĠtrÃ¬": 1226,
+      "Ġtráº£": 1227,
+      "Ġtráº¯": 1228,
+      "Ġtrang": 1229,
+      "Ġtrá»Ł": 1230,
+      "ĠtrÆ°á»£": 1231,
+      "Ġtrá»Ŀi": 1232,
+      "Ġtrá»ĳng": 1233,
+      "ĠtrÆ°á»Ľc": 1234,
+      "ĠtrÃªu": 1235,
+      "Ġtrá»Ļm": 1236,
+      "Ġngá»įc": 1237,
+      "Ġngá»§": 1238,
+      "ĠvÃłi": 1239,
+      "ĠvÃłng": 1240,
+      "ĠriÃª": 1241,
+      "Ġgit": 1242,
+      "Ġgiáº£": 1243,
+      "Ġgiáº¥y": 1244,
+      "Ġgiáº¥u": 1245,
+      "Ġgiá»ıi": 1246,
+      "ĠÄĳá»ı": 1247,
+      "Ġkhiáº¿": 1248,
+      "Ġxa": 1249,
+      "ĠxÃł": 1250,
+      "ĠxÆ°Æ¡ng": 1251,
+      "ĠxuyÃªn": 1252,
+      "Ġdanh": 1253,
+      "Ġdá»ĳc": 1254,
+      "Ġpull": 1255,
+      "Ġphu": 1256,
+      "ĠphÃ´": 1257,
+      "ĠphÃ¡": 1258,
+      "ĠquÃ½": 1259,
+      "Ġquáº§n": 1260,
+      "Ġcá»¥": 1261,
+      "ĠsÃ¡t": 1262,
+      "0030": 1263,
+      "0031": 1264,
+      "0033": 1265,
+      "0037": 1266,
+      "Ġchá»¥p": 1267,
+      "0020": 1268,
+      "0022": 1269,
+      "0023": 1270,
+      "0026": 1271,
+      "0029": 1272,
+      "0011": 1273,
+      "0013": 1274,
+      "0014": 1275,
+      "0017": 1276,
+      "0018": 1277,
+      "0040": 1278,
+      "0041": 1279,
+      "0043": 1280,
+      "0045": 1281,
+      "0046": 1282,
+      "0048": 1283,
+      "0050": 1284,
+      "0054": 1285,
+      "0055": 1286,
+      "0056": 1287,
+      "0058": 1288,
+      "0059": 1289,
+      "ĠcÃ¡i": 1290,
+      "Ã£n": 1291,
+      "0061": 1292,
+      "0064": 1293,
+      "0067": 1294,
+      "0068": 1295,
+      "ĠnghÄ©": 1296,
+      "ĠbÃ¡o": 1297,
+      "0001": 1298,
+      "0002": 1299,
+      "0003": 1300,
+      "0004": 1301,
+      "0005": 1302,
+      "0007": 1303,
+      "0008": 1304,
+      "ĠÄĳiá»ĩn": 1305,
+      "Ġcáº£nh": 1306,
+      "ĠÄĳÃ¡y": 1307,
+      "ĠCáºŃu": 1308,
+      "Ġrau": 1309,
+      "Ġnhiá»ĩm": 1310,
+      "ĠNhÃ¬n": 1311,
+      "ĠhoÃ£n": 1312,
+      "ĠMÃ¬": 1313,
+      "ĠtiÃªu": 1314,
+      "Ġtiá»ģu": 1315,
+      "Ġbiáº¿n": 1316,
+      "Ġxem": 1317,
+      "ĠphÃŃa": 1318,
+      "ĠyÃªn": 1319,
+      "ĠkhÃ¡c": 1320,
+      "ĠkhÃ¡m": 1321,
+      "Ġmáº·n": 1322,
+      "ÄĲá»ĥ": 1323,
+      "ĠLá»£n": 1324,
+      "ĠPhÃ´": 1325,
+      "ĠThanh": 1326,
+      "Ġvá»£t": 1327,
+      "Ġlá»Ľn": 1328,
+      "ChÃ³": 1329,
+      "ChÃło": 1330,
+      "quang": 1331,
+      "quest": 1332,
+      "Ġcuá»Ļc": 1333,
+      "Ġcuá»Ļn": 1334,
+      "Ġtiáº¿t": 1335,
+      "Ġtiáº¿ng": 1336,
+      "Ġtá»ıa": 1337,
+      "Ġmáº¡o": 1338,
+      "Ġmáº¡nh": 1339,
+      "ĠlÃ¡i": 1340,
+      "ĠlÃ¡ch": 1341,
+      "Ġreview": 1342,
+      "Ġrequest": 1343,
+      "MÃ´n": 1344,
+      "Miáº¿ng": 1345,
+      "Ġstash": 1346,
+      "ĠÃ¢m": 1347,
+      "ĠBÃ¡c": 1348,
+      "Ġtáº·ng": 1349,
+      "Ġmerge": 1350,
+      "Ġbáº¿p": 1351,
+      "Ġbá»¥ng": 1352,
+      "Ġbáº±ng": 1353,
+      "ĠlÃ£ng": 1354,
+      "Ġthiáº¿u": 1355,
+      "ĠnháºŃn": 1356,
+      "Ġnháº§m": 1357,
+      "Ġtráº¯ng": 1358,
+      "ĠtrÆ°á»£t": 1359,
+      "ĠriÃªng": 1360,
+      "Ġkhiáº¿n": 1361,
+      "ĠnghÄ©a": 1362
+    },
+    "merges": [
+      [
+        "á",
+        "»"
+      ],
+      [
+        "Ġ",
+        "c"
+      ],
+      [
+        "<",
+        "|"
+      ],
+      [
+        "|",
+        ">"
+      ],
+      [
+        "á",
+        "º"
+      ],
+      [
+        "Ġc",
+        "h"
+      ],
+      [
+        "Ġ",
+        "t"
+      ],
+      [
+        "n",
+        "g"
+      ],
+      [
+        "o",
+        "s"
+      ],
+      [
+        "|>",
+        "<|"
+      ],
+      [
+        "Æ",
+        "°"
+      ],
+      [
+        "Ã",
+        "´"
+      ],
+      [
+        "Ġ",
+        "m"
+      ],
+      [
+        "Æ°",
+        "á»"
+      ],
+      [
+        "Ġ",
+        "v"
+      ],
+      [
+        "Ġ",
+        "Ä"
+      ],
+      [
+        "á»",
+        "ĥ"
+      ],
+      [
+        "Ã",
+        "ł"
+      ],
+      [
+        "á»",
+        "ĩ"
+      ],
+      [
+        ".",
+        "<|"
+      ],
+      [
+        "n",
+        "h"
+      ],
+      [
+        "ĠÄ",
+        "ĳ"
+      ],
+      [
+        "Ã´",
+        "i"
+      ],
+      [
+        "Æ°á»",
+        "Ŀ"
+      ],
+      [
+        "á»",
+        "Ļ"
+      ],
+      [
+        "0",
+        "0"
+      ],
+      [
+        "Ġ",
+        "b"
+      ],
+      [
+        "u",
+        "y"
+      ],
+      [
+        "Æ°á»Ŀ",
+        "i"
+      ],
+      [
+        "s",
+        "i"
+      ],
+      [
+        "á»ĩ",
+        "n"
+      ],
+      [
+        "á»Ļ",
+        "t"
+      ],
+      [
+        "Ġch",
+        "uy"
+      ],
+      [
+        "Ġchuy",
+        "á»ĩn"
+      ],
+      [
+        "a",
+        "n"
+      ],
+      [
+        "Ġm",
+        "á»Ļt"
+      ],
+      [
+        "Ã",
+        "¡"
+      ],
+      [
+        "s",
+        "t"
+      ],
+      [
+        "Ġc",
+        "Æ°á»Ŀi"
+      ],
+      [
+        "u",
+        "s"
+      ],
+      [
+        "a",
+        "s"
+      ],
+      [
+        "e",
+        "r"
+      ],
+      [
+        "K",
+        "á»ĥ"
+      ],
+      [
+        "b",
+        "os"
+      ],
+      [
+        "e",
+        "os"
+      ],
+      [
+        "č",
+        "Ċ"
+      ],
+      [
+        "si",
+        "st"
+      ],
+      [
+        "an",
+        "t"
+      ],
+      [
+        "us",
+        "er"
+      ],
+      [
+        "as",
+        "sist"
+      ],
+      [
+        "assist",
+        "ant"
+      ],
+      [
+        "Ã",
+        "¬"
+      ],
+      [
+        "Ġt",
+        "Ã´i"
+      ],
+      [
+        "Ġ",
+        "l"
+      ],
+      [
+        "Ġch",
+        "o"
+      ],
+      [
+        "Ġ",
+        "g"
+      ],
+      [
+        "Ġv",
+        "á»"
+      ],
+      [
+        "Ġ",
+        "n"
+      ],
+      [
+        "Ã",
+        "³"
+      ],
+      [
+        "Ġ",
+        "k"
+      ],
+      [
+        "Ġt",
+        "h"
+      ],
+      [
+        "Ã",
+        "¢"
+      ],
+      [
+        "Ġ",
+        "s"
+      ],
+      [
+        "Ġvá»",
+        "ģ"
+      ],
+      [
+        "Ġ",
+        "h"
+      ],
+      [
+        "Ġ",
+        "nh"
+      ],
+      [
+        "Ġt",
+        "r"
+      ],
+      [
+        "Ã",
+        "ª"
+      ],
+      [
+        "á»",
+        "ĳ"
+      ],
+      [
+        "a",
+        "o"
+      ],
+      [
+        "!",
+        "<|"
+      ],
+      [
+        "Ġ",
+        "ng"
+      ],
+      [
+        "áº",
+        "¥"
+      ],
+      [
+        "Ġv",
+        "Ãł"
+      ],
+      [
+        "áº",
+        "£"
+      ],
+      [
+        "Ġ",
+        "r"
+      ],
+      [
+        "áº",
+        "¿"
+      ],
+      [
+        "T",
+        "Ã´i"
+      ],
+      [
+        "á»",
+        "į"
+      ],
+      [
+        "áº",
+        "¡"
+      ],
+      [
+        "V",
+        "Ã¬"
+      ],
+      [
+        "Ġg",
+        "i"
+      ],
+      [
+        "Ãª",
+        "n"
+      ],
+      [
+        "Ã¢",
+        "u"
+      ],
+      [
+        "S",
+        "ao"
+      ],
+      [
+        "Ã´",
+        "ng"
+      ],
+      [
+        "Æ",
+        "¡"
+      ],
+      [
+        "Ġl",
+        "Ãł"
+      ],
+      [
+        "Ġ",
+        "VÃ¬"
+      ],
+      [
+        "áº",
+        "¯"
+      ],
+      [
+        "Ġc",
+        "Ã¢u"
+      ],
+      [
+        "ĠÄĳ",
+        "á»"
+      ],
+      [
+        "Ġk",
+        "h"
+      ],
+      [
+        "Ġ",
+        "x"
+      ],
+      [
+        "Ġ",
+        "d"
+      ],
+      [
+        "á»į",
+        "c"
+      ],
+      [
+        "c",
+        "h"
+      ],
+      [
+        "áº",
+        "Ń"
+      ],
+      [
+        "Ġv",
+        "i"
+      ],
+      [
+        ".",
+        "."
+      ],
+      [
+        "Ġ",
+        "p"
+      ],
+      [
+        "Ã",
+        "Ń"
+      ],
+      [
+        "á»",
+        "©"
+      ],
+      [
+        "Ġn",
+        "Ã³"
+      ],
+      [
+        "Ġp",
+        "h"
+      ],
+      [
+        "Ġ",
+        "q"
+      ],
+      [
+        "Æ°á»",
+        "Ľ"
+      ],
+      [
+        "Ġ",
+        "'"
+      ],
+      [
+        "áº¥",
+        "y"
+      ],
+      [
+        "a",
+        "ng"
+      ],
+      [
+        "u",
+        "á»ĳ"
+      ],
+      [
+        "Ġg",
+        "Ã¬"
+      ],
+      [
+        "Ã",
+        "º"
+      ],
+      [
+        "i",
+        "á»ĥ"
+      ],
+      [
+        "Ã¬",
+        "nh"
+      ],
+      [
+        "Ġkh",
+        "Ã´ng"
+      ],
+      [
+        "áº",
+        "³"
+      ],
+      [
+        "Ġq",
+        "u"
+      ],
+      [
+        "ĠlÃł",
+        "m"
+      ],
+      [
+        "Ġc",
+        "á»"
+      ],
+      [
+        "Ġnh",
+        "Æ°"
+      ],
+      [
+        "á»",
+        "Ŀ"
+      ],
+      [
+        "Ġc",
+        "Ã³"
+      ],
+      [
+        "Ġs",
+        "Ã¡"
+      ],
+      [
+        "Æ¡",
+        "i"
+      ],
+      [
+        "Ġch",
+        "áº³"
+      ],
+      [
+        "Ġcháº³",
+        "ng"
+      ],
+      [
+        "iá»ĥ",
+        "u"
+      ],
+      [
+        "i",
+        "áº¿"
+      ],
+      [
+        "á»",
+        "±"
+      ],
+      [
+        "á»",
+        "Ł"
+      ],
+      [
+        "00",
+        "3"
+      ],
+      [
+        "Ġb",
+        "áº£"
+      ],
+      [
+        "Ġh",
+        "á»įc"
+      ],
+      [
+        "ĥ",
+        "n"
+      ],
+      [
+        "Ġch",
+        "á»"
+      ],
+      [
+        "00",
+        "2"
+      ],
+      [
+        "Ã¡",
+        "n"
+      ],
+      [
+        "á»",
+        "ĭ"
+      ],
+      [
+        "00",
+        "1"
+      ],
+      [
+        "Ã¢",
+        "y"
+      ],
+      [
+        "Ġ",
+        "á»Ł"
+      ],
+      [
+        "áº",
+        "§"
+      ],
+      [
+        "00",
+        "4"
+      ],
+      [
+        "ĠÄĳá»",
+        "ĵ"
+      ],
+      [
+        "á»",
+        "ĵ"
+      ],
+      [
+        "00",
+        "5"
+      ],
+      [
+        "Ġn",
+        "Æ°á»Ľ"
+      ],
+      [
+        "áºŃ",
+        "p"
+      ],
+      [
+        "ĠnhÆ°",
+        "ng"
+      ],
+      [
+        "Ġc",
+        "Ã¡"
+      ],
+      [
+        "Æ°á»",
+        "£"
+      ],
+      [
+        "Ġb",
+        "á»ĳ"
+      ],
+      [
+        "Ġk",
+        "iá»ĥu"
+      ],
+      [
+        "o",
+        "n"
+      ],
+      [
+        "Ã",
+        "£"
+      ],
+      [
+        "00",
+        "6"
+      ],
+      [
+        "Ġng",
+        "h"
+      ],
+      [
+        "ĠÄ",
+        "ĥn"
+      ],
+      [
+        "Ġb",
+        "Ã¡"
+      ],
+      [
+        "'",
+        "<|"
+      ],
+      [
+        "a",
+        "i"
+      ],
+      [
+        "Ġ",
+        "si"
+      ],
+      [
+        "Ġc",
+        "Ã´"
+      ],
+      [
+        "Æ°á»Ŀ",
+        "ng"
+      ],
+      [
+        "00",
+        "0"
+      ],
+      [
+        "..",
+        "."
+      ],
+      [
+        "Æ°á»£",
+        "c"
+      ],
+      [
+        "Ġsi",
+        "nh"
+      ],
+      [
+        "á»ĩ",
+        "c"
+      ],
+      [
+        "ĠÄĳ",
+        "i"
+      ],
+      [
+        "Ġn",
+        "Ãł"
+      ],
+      [
+        "ĠsÃ¡",
+        "ch"
+      ],
+      [
+        "Ġbáº£",
+        "o"
+      ],
+      [
+        "Ġc",
+        "áº£"
+      ],
+      [
+        "Ġm",
+        "Ãł"
+      ],
+      [
+        "Ġtr",
+        "Ã¬nh"
+      ],
+      [
+        "ÃŃ",
+        "nh"
+      ],
+      [
+        "á»",
+        "£"
+      ],
+      [
+        "a",
+        "y"
+      ],
+      [
+        "§",
+        "a"
+      ],
+      [
+        "Ġch",
+        "Æ¡i"
+      ],
+      [
+        "ĠÄ",
+        "Ĳ"
+      ],
+      [
+        "ĠÄĳ",
+        "Ã¡"
+      ],
+      [
+        "ĠÄĳ",
+        "Æ°á»£c"
+      ],
+      [
+        "Ġcá»",
+        "§a"
+      ],
+      [
+        "áº¡",
+        "c"
+      ],
+      [
+        "áº¯",
+        "n"
+      ],
+      [
+        "á»©",
+        "c"
+      ],
+      [
+        "á»ĵ",
+        "i"
+      ],
+      [
+        "Ã",
+        "¹"
+      ],
+      [
+        "á»",
+        "«"
+      ],
+      [
+        "Ġc",
+        "on"
+      ],
+      [
+        "Ġch",
+        "i"
+      ],
+      [
+        "Ġ",
+        "C"
+      ],
+      [
+        "Ġ",
+        "áº¥y"
+      ],
+      [
+        "Ľ",
+        "i"
+      ],
+      [
+        "á»",
+        "¥"
+      ],
+      [
+        "Ġt",
+        "o"
+      ],
+      [
+        "Ġl",
+        "áºŃp"
+      ],
+      [
+        "Ġs",
+        "ao"
+      ],
+      [
+        "áº¯",
+        "t"
+      ],
+      [
+        "á»",
+        "ı"
+      ],
+      [
+        "áº¥",
+        "t"
+      ],
+      [
+        "áº¿",
+        "t"
+      ],
+      [
+        "á»į",
+        "i"
+      ],
+      [
+        "áº¡",
+        "n"
+      ],
+      [
+        "Ġd",
+        "á»±"
+      ],
+      [
+        "Ġvi",
+        "á»ĩc"
+      ],
+      [
+        "áº",
+        "·"
+      ],
+      [
+        "Ã¡",
+        "o"
+      ],
+      [
+        "Ġl",
+        "Ãªn"
+      ],
+      [
+        "Ġr",
+        "a"
+      ],
+      [
+        "uá»ĳ",
+        "ng"
+      ],
+      [
+        "á»Ŀ",
+        "i"
+      ],
+      [
+        "ĠÄĳ",
+        "ang"
+      ],
+      [
+        "Ġth",
+        "Ã¬"
+      ],
+      [
+        "Ġnh",
+        "i"
+      ],
+      [
+        "Ġr",
+        "á»ĵi"
+      ],
+      [
+        "áº¿",
+        "n"
+      ],
+      [
+        "ĠnÃł",
+        "o"
+      ],
+      [
+        "!",
+        "'<|"
+      ],
+      [
+        "á»",
+        "ģ"
+      ],
+      [
+        "ĠÄĳ",
+        "á»įc"
+      ],
+      [
+        "Ġg",
+        "á»įi"
+      ],
+      [
+        "Ġvá»",
+        "Ľi"
+      ],
+      [
+        "áº¥",
+        "u"
+      ],
+      [
+        "Ġvi",
+        "Ãªn"
+      ],
+      [
+        "uá»ĳ",
+        "n"
+      ],
+      [
+        "Ġchá»",
+        "¯"
+      ],
+      [
+        "ĠnÆ°á»Ľ",
+        "c"
+      ],
+      [
+        "ĠbÃ¡",
+        "nh"
+      ],
+      [
+        "²",
+        "n"
+      ],
+      [
+        "Ã",
+        "²n"
+      ],
+      [
+        "Å",
+        "©"
+      ],
+      [
+        "ĭ",
+        "nh"
+      ],
+      [
+        "Ġt",
+        "ÃŃnh"
+      ],
+      [
+        "ĠÄĳ",
+        "Ã¢y"
+      ],
+      [
+        "Ġb",
+        "á»ĭ"
+      ],
+      [
+        "ĠÄĳá»",
+        "ĭnh"
+      ],
+      [
+        "á»«",
+        "ng"
+      ],
+      [
+        "Ġchi",
+        "m"
+      ],
+      [
+        "Ġ",
+        "N"
+      ],
+      [
+        "á»",
+        "Ń"
+      ],
+      [
+        "Ãł",
+        "i"
+      ],
+      [
+        "Ġn",
+        "á»"
+      ],
+      [
+        "Ġng",
+        "áº¯n"
+      ],
+      [
+        "Ġgi",
+        "Ã¡o"
+      ],
+      [
+        "Ġto",
+        "Ã¡n"
+      ],
+      [
+        "T",
+        "h"
+      ],
+      [
+        "Ã",
+        "½"
+      ],
+      [
+        "Ãł",
+        "nh"
+      ],
+      [
+        "Ġb",
+        "áº¯t"
+      ],
+      [
+        "Ġb",
+        "áº¡n"
+      ],
+      [
+        "Ġh",
+        "o"
+      ],
+      [
+        "Ġnh",
+        "áº¡c"
+      ],
+      [
+        "áºŃ",
+        "t"
+      ],
+      [
+        "Ä",
+        "©"
+      ],
+      [
+        "Ġc",
+        "Å©"
+      ],
+      [
+        "Æ°",
+        "Æ¡"
+      ],
+      [
+        "Ġm",
+        "ang"
+      ],
+      [
+        "Ãł",
+        "y"
+      ],
+      [
+        "Ġk",
+        "á»ĥ"
+      ],
+      [
+        "Ġvi",
+        "áº¿t"
+      ],
+      [
+        "Ġchá»",
+        "ī"
+      ],
+      [
+        "ĠnÆ°á»Ľ",
+        "ng"
+      ],
+      [
+        "Ġcáº£",
+        "m"
+      ],
+      [
+        "ĠÄĲ",
+        "á»ĥ"
+      ],
+      [
+        "ĠcÅ©",
+        "ng"
+      ],
+      [
+        "Æ°Æ¡",
+        "ng"
+      ],
+      [
+        "a",
+        "nh"
+      ],
+      [
+        "Ġ",
+        "M"
+      ],
+      [
+        "ķ",
+        "i"
+      ],
+      [
+        "Ġc",
+        "á»©"
+      ],
+      [
+        "Ġc",
+        "Ã²n"
+      ],
+      [
+        "Ãł",
+        "n"
+      ],
+      [
+        "Ã³",
+        "c"
+      ],
+      [
+        "Ã¢",
+        "n"
+      ],
+      [
+        "á»ĳ",
+        "i"
+      ],
+      [
+        "á»ĳ",
+        "ng"
+      ],
+      [
+        "áº£",
+        "i"
+      ],
+      [
+        "Æ°á»Ľ",
+        "c"
+      ],
+      [
+        "áº§",
+        "u"
+      ],
+      [
+        "Ã",
+        "©"
+      ],
+      [
+        "Ġt",
+        "i"
+      ],
+      [
+        "ĠÄĳ",
+        "á»ĥ"
+      ],
+      [
+        "ĠÄĳ",
+        "áº¿n"
+      ],
+      [
+        "Ġb",
+        "u"
+      ],
+      [
+        "Ġb",
+        "iáº¿"
+      ],
+      [
+        "Ġth",
+        "áº¥y"
+      ],
+      [
+        "Ãª",
+        "u"
+      ],
+      [
+        "Ġng",
+        "Æ°á»Ŀi"
+      ],
+      [
+        "áº¥",
+        "m"
+      ],
+      [
+        "áº¯",
+        "c"
+      ],
+      [
+        "Ġx",
+        "e"
+      ],
+      [
+        "Ãº",
+        "ng"
+      ],
+      [
+        "á»ı",
+        "i"
+      ],
+      [
+        "u",
+        "ng"
+      ],
+      [
+        "Ä",
+        "ĥ"
+      ],
+      [
+        "Ġc",
+        "ao"
+      ],
+      [
+        "Ġc",
+        "Ã´ng"
+      ],
+      [
+        "Ġl",
+        "á»"
+      ],
+      [
+        "Ġl",
+        "á»ĭ"
+      ],
+      [
+        "Ġs",
+        "á»£"
+      ],
+      [
+        "Ġs",
+        "Ä©"
+      ],
+      [
+        "Ġx",
+        "Ãº"
+      ],
+      [
+        "Ġph",
+        "ÃŃ"
+      ],
+      [
+        "Ãº",
+        "t"
+      ],
+      [
+        "áº§",
+        "y"
+      ],
+      [
+        "Ġnhi",
+        "Ãªn"
+      ],
+      [
+        "Äĥ",
+        "ng"
+      ],
+      [
+        "Ġlá»ĭ",
+        "ch"
+      ],
+      [
+        "ĠxÃº",
+        "c"
+      ],
+      [
+        "e",
+        "o"
+      ],
+      [
+        "i",
+        "á»ĩ"
+      ],
+      [
+        "Ġ",
+        "TÃ´i"
+      ],
+      [
+        "Ġc",
+        "Ãł"
+      ],
+      [
+        "Ġt",
+        "áºŃp"
+      ],
+      [
+        "Ġm",
+        "Ã£"
+      ],
+      [
+        "Ġv",
+        "áºŃt"
+      ],
+      [
+        "Ã¡",
+        "y"
+      ],
+      [
+        "Ġn",
+        "áº¥u"
+      ],
+      [
+        "Ġth",
+        "á»ĥ"
+      ],
+      [
+        "Ġtr",
+        "Ãªn"
+      ],
+      [
+        "Ġng",
+        "Ãły"
+      ],
+      [
+        "áº¡",
+        "i"
+      ],
+      [
+        "áº¡",
+        "t"
+      ],
+      [
+        "Ġx",
+        "uá»ĳng"
+      ],
+      [
+        "ÃŃ",
+        "ch"
+      ],
+      [
+        "ĠnÃ³",
+        "i"
+      ],
+      [
+        "Ġqu",
+        "Ã¡"
+      ],
+      [
+        "Ġngh",
+        "á»ģ"
+      ],
+      [
+        "Ġngh",
+        "iá»ĩ"
+      ],
+      [
+        "Ã¹",
+        "ng"
+      ],
+      [
+        "Ġdá»±",
+        "a"
+      ],
+      [
+        "Ġnghiá»ĩ",
+        "p"
+      ],
+      [
+        "o",
+        "ng"
+      ],
+      [
+        "Ġ",
+        "y"
+      ],
+      [
+        "Ġ",
+        "uá»ĳng"
+      ],
+      [
+        "áº",
+        "±"
+      ],
+      [
+        "áº",
+        "»"
+      ],
+      [
+        "Ġt",
+        "Ã¬"
+      ],
+      [
+        "Ġt",
+        "Ãªn"
+      ],
+      [
+        "Ġt",
+        "Æ°á»Ŀng"
+      ],
+      [
+        "Ġt",
+        "á»«ng"
+      ],
+      [
+        "Ġm",
+        "Ã³"
+      ],
+      [
+        "ĠÄĳ",
+        "áº§u"
+      ],
+      [
+        "Ġb",
+        "Ã³"
+      ],
+      [
+        "Ġb",
+        "ay"
+      ],
+      [
+        "Ġl",
+        "Ã½"
+      ],
+      [
+        "Ġth",
+        "á»Ŀi"
+      ],
+      [
+        "Ġtr",
+        "ong"
+      ],
+      [
+        "Ãª",
+        "m"
+      ],
+      [
+        "Ġgi",
+        "an"
+      ],
+      [
+        "Æ¡",
+        "n"
+      ],
+      [
+        "Ġkh",
+        "Ã¡"
+      ],
+      [
+        "Ġx",
+        "á»Ń"
+      ],
+      [
+        "á»©",
+        "ng"
+      ],
+      [
+        "Ġph",
+        "áº£i"
+      ],
+      [
+        "uá»ĳ",
+        "t"
+      ],
+      [
+        "ĠcÃ¡",
+        "c"
+      ],
+      [
+        "ĠÄĳÃ¡",
+        "p"
+      ],
+      [
+        "Ġná»",
+        "ķi"
+      ],
+      [
+        "Ġbiáº¿",
+        "t"
+      ],
+      [
+        "ĠtÃ¬",
+        "m"
+      ],
+      [
+        "ĠmÃ³",
+        "n"
+      ],
+      [
+        "ĠbÃ³",
+        "ng"
+      ],
+      [
+        "«",
+        "a"
+      ],
+      [
+        "á»",
+        "¯"
+      ],
+      [
+        "Ġch",
+        "Ãºng"
+      ],
+      [
+        "Ġm",
+        "áº¥t"
+      ],
+      [
+        "Ġm",
+        "áº·"
+      ],
+      [
+        "Ġv",
+        "áº"
+      ],
+      [
+        "ĠÄĳ",
+        "á»Ļ"
+      ],
+      [
+        "ĠÄĳ",
+        "Ã¢u"
+      ],
+      [
+        "Ġb",
+        "Ãłi"
+      ],
+      [
+        "Ġg",
+        "áº·"
+      ],
+      [
+        "Ġvá»",
+        "«a"
+      ],
+      [
+        "Ġth",
+        "ang"
+      ],
+      [
+        "Ġng",
+        "áº¡c"
+      ],
+      [
+        "Ġq",
+        "uy"
+      ],
+      [
+        "Ġqu",
+        "Ã¡n"
+      ],
+      [
+        "Ġcá»",
+        "Ń"
+      ],
+      [
+        "ĠsÃ¡",
+        "ng"
+      ],
+      [
+        "á»ĵ",
+        "n"
+      ],
+      [
+        "ĠbÃ¡",
+        "c"
+      ],
+      [
+        "ĠnÃł",
+        "y"
+      ],
+      [
+        "Ã¹",
+        "a"
+      ],
+      [
+        "ĠN",
+        "Ã³"
+      ],
+      [
+        "Ġho",
+        "a"
+      ],
+      [
+        "Ġbu",
+        "á»ĵn"
+      ],
+      [
+        "Ġgáº·",
+        "p"
+      ],
+      [
+        "!",
+        "'"
+      ],
+      [
+        "?",
+        "'<|"
+      ],
+      [
+        "a",
+        "m"
+      ],
+      [
+        "g",
+        "Æ°á»Ŀi"
+      ],
+      [
+        "h",
+        "i"
+      ],
+      [
+        "Ġc",
+        "Ã¢y"
+      ],
+      [
+        "Ġt",
+        "Äĥng"
+      ],
+      [
+        "Ġm",
+        "Æ¡"
+      ],
+      [
+        "Ġm",
+        "á»©c"
+      ],
+      [
+        "ĠÄĳ",
+        "Æ°á»Ŀng"
+      ],
+      [
+        "Ġth",
+        "Æ°"
+      ],
+      [
+        "Ġnh",
+        "Ãł"
+      ],
+      [
+        "Ġnh",
+        "Ã¡"
+      ],
+      [
+        "Ġnh",
+        "Ã¢n"
+      ],
+      [
+        "Ġtr",
+        "ung"
+      ],
+      [
+        "áº¥",
+        "c"
+      ],
+      [
+        "ĠvÃł",
+        "o"
+      ],
+      [
+        "Ġgi",
+        "á»Ŀ"
+      ],
+      [
+        "Ġgi",
+        "áº¥c"
+      ],
+      [
+        "Ġd",
+        "Ã¹ng"
+      ],
+      [
+        "áºŃ",
+        "u"
+      ],
+      [
+        "Ġph",
+        "Ãª"
+      ],
+      [
+        "á»ģ",
+        "u"
+      ],
+      [
+        "e",
+        "m"
+      ],
+      [
+        "Ä",
+        "Ĳ"
+      ],
+      [
+        "Ġ",
+        "L"
+      ],
+      [
+        "Ġ",
+        "P"
+      ],
+      [
+        "Ġ",
+        "ai"
+      ],
+      [
+        "Ġ",
+        "Th"
+      ],
+      [
+        "Ł",
+        "ng"
+      ],
+      [
+        "á»",
+        "ī"
+      ],
+      [
+        "Ġt",
+        "á»±"
+      ],
+      [
+        "Ġm",
+        "á»ĩ"
+      ],
+      [
+        "Ġm",
+        "áº£"
+      ],
+      [
+        "Ġm",
+        "Ã¡y"
+      ],
+      [
+        "Æ°á»",
+        "Łng"
+      ],
+      [
+        "ĠÄĳ",
+        "Ãªm"
+      ],
+      [
+        "Ã¬",
+        "n"
+      ],
+      [
+        "Ġl",
+        "áº¥y"
+      ],
+      [
+        "Ġl",
+        "áº¡i"
+      ],
+      [
+        "Ġvá»",
+        "£"
+      ],
+      [
+        "Ġn",
+        "áº±"
+      ],
+      [
+        "Ġk",
+        "áº»"
+      ],
+      [
+        "Ġth",
+        "á»©c"
+      ],
+      [
+        "Ġth",
+        "Ãłnh"
+      ],
+      [
+        "Ġth",
+        "ÃŃch"
+      ],
+      [
+        "Ġs",
+        "á»ĳng"
+      ],
+      [
+        "Ġs",
+        "uá»ĳt"
+      ],
+      [
+        "Ġh",
+        "Ã¬nh"
+      ],
+      [
+        "Ġh",
+        "Æ¡i"
+      ],
+      [
+        "Ġh",
+        "áº¿t"
+      ],
+      [
+        "Ġh",
+        "áº¡t"
+      ],
+      [
+        "Ġtr",
+        "Æ°á»Ŀng"
+      ],
+      [
+        "Ġr",
+        "Ã£"
+      ],
+      [
+        "Ġr",
+        "áº¥t"
+      ],
+      [
+        "Ġr",
+        "á»ĳi"
+      ],
+      [
+        "Ġr",
+        "áº¯c"
+      ],
+      [
+        "áº¡",
+        "m"
+      ],
+      [
+        "Ġx",
+        "Æ°á»Łng"
+      ],
+      [
+        "Ġd",
+        "á»¥"
+      ],
+      [
+        "iá»ĥ",
+        "n"
+      ],
+      [
+        "Ġqu",
+        "a"
+      ],
+      [
+        "Ġqu",
+        "áº£"
+      ],
+      [
+        "ĠÄĳá»ĵ",
+        "ng"
+      ],
+      [
+        "ĠcÃ¡",
+        "ch"
+      ],
+      [
+        "Ġngh",
+        "á»ī"
+      ],
+      [
+        "ĠÄĲ",
+        "áº¿n"
+      ],
+      [
+        "ĠC",
+        "Ã´"
+      ],
+      [
+        "Ġná»",
+        "¯"
+      ],
+      [
+        "ĠM",
+        "á»Ļt"
+      ],
+      [
+        "Ġti",
+        "á»ĩc"
+      ],
+      [
+        "Ġlá»",
+        "Ľ"
+      ],
+      [
+        "ĠmÃ£",
+        "i"
+      ],
+      [
+        "Ġy",
+        "Ãªu"
+      ],
+      [
+        "Ġmá»ĩ",
+        "t"
+      ],
+      [
+        "Ġmáº£",
+        "ng"
+      ],
+      [
+        "Ġnáº±",
+        "m"
+      ],
+      [
+        "Ġdá»¥",
+        "c"
+      ],
+      [
+        "C",
+        "h"
+      ],
+      [
+        "q",
+        "u"
+      ],
+      [
+        "u",
+        "á»Ļ"
+      ],
+      [
+        "Ä",
+        "ĥn"
+      ],
+      [
+        "Ŀ",
+        "i"
+      ],
+      [
+        "á»",
+        "§"
+      ],
+      [
+        "Ġc",
+        "uá»ĳn"
+      ],
+      [
+        "Ġc",
+        "uá»Ļ"
+      ],
+      [
+        "Ġch",
+        "iáº¿"
+      ],
+      [
+        "Ġch",
+        "ÃŃnh"
+      ],
+      [
+        "Ġch",
+        "Ã¢n"
+      ],
+      [
+        "Ġt",
+        "iáº¿"
+      ],
+      [
+        "Ġt",
+        "ay"
+      ],
+      [
+        "Ġt",
+        "á»«"
+      ],
+      [
+        "Ġt",
+        "á»ı"
+      ],
+      [
+        "Ġm",
+        "áº¡"
+      ],
+      [
+        "Ġm",
+        "Ã¬nh"
+      ],
+      [
+        "Ġm",
+        "ai"
+      ],
+      [
+        "Ġm",
+        "uá»ĳn"
+      ],
+      [
+        "ĠÄĳ",
+        "á»ĩ"
+      ],
+      [
+        "ĠÄĳ",
+        "Ã¹a"
+      ],
+      [
+        "Ġl",
+        "Ã¡"
+      ],
+      [
+        "Ġl",
+        "á»±"
+      ],
+      [
+        "Ġvá»",
+        "¡"
+      ],
+      [
+        "Ġs",
+        "á»ĳ"
+      ],
+      [
+        "Ġh",
+        "iá»ĥu"
+      ],
+      [
+        "Ġh",
+        "Ãłnh"
+      ],
+      [
+        "Ġh",
+        "á»ıi"
+      ],
+      [
+        "Ġtr",
+        "ai"
+      ],
+      [
+        "Ġtr",
+        "á»¥"
+      ],
+      [
+        "Ġtr",
+        "á»©ng"
+      ],
+      [
+        "á»ĳ",
+        "c"
+      ],
+      [
+        "Ġr",
+        "e"
+      ],
+      [
+        "Ġgi",
+        "a"
+      ],
+      [
+        "ĠÄĳá»",
+        "Ŀi"
+      ],
+      [
+        "Ġph",
+        "i"
+      ],
+      [
+        "á»ĭ",
+        "p"
+      ],
+      [
+        "áº§",
+        "n"
+      ],
+      [
+        "á»£",
+        "n"
+      ],
+      [
+        "ĠÄĳÃ¡",
+        "nh"
+      ],
+      [
+        "Ġchi",
+        "a"
+      ],
+      [
+        "Ġto",
+        "Ãłn"
+      ],
+      [
+        "ĠphÃŃ",
+        "m"
+      ],
+      [
+        "Ġmáº·",
+        "t"
+      ],
+      [
+        "Ġchiáº¿",
+        "c"
+      ],
+      [
+        "Ġlá»±",
+        "c"
+      ],
+      [
+        "B",
+        "á»©c"
+      ],
+      [
+        "H",
+        "áº"
+      ],
+      [
+        "M",
+        "á»Ļt"
+      ],
+      [
+        "R",
+        "u"
+      ],
+      [
+        "T",
+        "ÃŃ"
+      ],
+      [
+        "V",
+        "á»£"
+      ],
+      [
+        "i",
+        "a"
+      ],
+      [
+        "¹",
+        "n"
+      ],
+      [
+        "Ġ",
+        "Ã¡"
+      ],
+      [
+        "Ġ",
+        "TÃŃ"
+      ],
+      [
+        "Ġ",
+        "Vá»£"
+      ],
+      [
+        "Ĺ",
+        "i"
+      ],
+      [
+        "á»",
+        "ŀ"
+      ],
+      [
+        "Ġc",
+        "áº¥m"
+      ],
+      [
+        "Ġc",
+        "áºŃu"
+      ],
+      [
+        "Ġch",
+        "Ã¬"
+      ],
+      [
+        "Ġch",
+        "áº¿"
+      ],
+      [
+        "Ġch",
+        "Ã¢u"
+      ],
+      [
+        "Ġch",
+        "áº¥u"
+      ],
+      [
+        "Ġch",
+        "Æ°Æ¡ng"
+      ],
+      [
+        "ĠÄĳ",
+        "áº¥y"
+      ],
+      [
+        "Ġb",
+        "Ãº"
+      ],
+      [
+        "Ġb",
+        "á»©c"
+      ],
+      [
+        "Ġb",
+        "Ãºt"
+      ],
+      [
+        "Ġl",
+        "áº¯"
+      ],
+      [
+        "Ġg",
+        "Ã³c"
+      ],
+      [
+        "Ġk",
+        "ia"
+      ],
+      [
+        "Ġs",
+        "Ãłn"
+      ],
+      [
+        "Ġh",
+        "Ã³c"
+      ],
+      [
+        "Ġnh",
+        "Ã©"
+      ],
+      [
+        "Ġnh",
+        "á»¯"
+      ],
+      [
+        "Ġtr",
+        "Ãł"
+      ],
+      [
+        "Ġng",
+        "á»ĵi"
+      ],
+      [
+        "Ġgi",
+        "Æ°á»Ŀng"
+      ],
+      [
+        "Ġd",
+        "Æ°á»Ľ"
+      ],
+      [
+        "Ġvi",
+        "á»ĩn"
+      ],
+      [
+        "Ġph",
+        "a"
+      ],
+      [
+        "Ġph",
+        "Ã©"
+      ],
+      [
+        "003",
+        "4"
+      ],
+      [
+        "003",
+        "9"
+      ],
+      [
+        "Ġbáº£",
+        "ng"
+      ],
+      [
+        "002",
+        "5"
+      ],
+      [
+        "002",
+        "7"
+      ],
+      [
+        "001",
+        "9"
+      ],
+      [
+        "004",
+        "7"
+      ],
+      [
+        "000",
+        "6"
+      ],
+      [
+        "ĠC",
+        "Ã³"
+      ],
+      [
+        "Ġnhi",
+        "á»ģu"
+      ],
+      [
+        "ĠN",
+        "gÆ°á»Ŀi"
+      ],
+      [
+        "Th",
+        "áºŃt"
+      ],
+      [
+        "Ġlá»",
+        "Ĺi"
+      ],
+      [
+        "Ġváº",
+        "½"
+      ],
+      [
+        "Ġcá»Ń",
+        "u"
+      ],
+      [
+        "Háº",
+        "¹n"
+      ],
+      [
+        "Ru",
+        "st"
+      ],
+      [
+        "ĠbÃº",
+        "a"
+      ],
+      [
+        "Ġláº¯",
+        "m"
+      ],
+      [
+        "Ġnhá»¯",
+        "ng"
+      ],
+      [
+        "ĠdÆ°á»Ľ",
+        "i"
+      ],
+      [
+        "ĠphÃ©",
+        "p"
+      ],
+      [
+        "?",
+        "<|"
+      ],
+      [
+        "A",
+        "p"
+      ],
+      [
+        "B",
+        "Ãłi"
+      ],
+      [
+        "C",
+        "Ã¡"
+      ],
+      [
+        "C",
+        "uá»ĳn"
+      ],
+      [
+        "G",
+        "i"
+      ],
+      [
+        "L",
+        "ai"
+      ],
+      [
+        "M",
+        "Ã¡y"
+      ],
+      [
+        "S",
+        "o"
+      ],
+      [
+        "T",
+        "r"
+      ],
+      [
+        "X",
+        "e"
+      ],
+      [
+        "b",
+        "Ã¡"
+      ],
+      [
+        "g",
+        "hi"
+      ],
+      [
+        "h",
+        "on"
+      ],
+      [
+        "i",
+        "nh"
+      ],
+      [
+        "l",
+        "e"
+      ],
+      [
+        "n",
+        "i"
+      ],
+      [
+        "n",
+        "áº¥m"
+      ],
+      [
+        "o",
+        "r"
+      ],
+      [
+        "o",
+        "Ãłi"
+      ],
+      [
+        "o",
+        "áº¡i"
+      ],
+      [
+        "p",
+        "le"
+      ],
+      [
+        "t",
+        "hon"
+      ],
+      [
+        "u",
+        "á»"
+      ],
+      [
+        "y",
+        "thon"
+      ],
+      [
+        "«",
+        "n"
+      ],
+      [
+        "«",
+        "u"
+      ],
+      [
+        "Ã",
+        "¨"
+      ],
+      [
+        "Ã",
+        "į"
+      ],
+      [
+        "Ġ",
+        "an"
+      ],
+      [
+        "Ġ",
+        "Ã¡n"
+      ],
+      [
+        "Ġ",
+        "em"
+      ],
+      [
+        "Ġ",
+        "Ap"
+      ],
+      [
+        "Ġ",
+        "Gi"
+      ],
+      [
+        "Ġ",
+        "So"
+      ],
+      [
+        "ģ",
+        "u"
+      ],
+      [
+        "ĳ",
+        "n"
+      ],
+      [
+        "á»",
+        "ħ"
+      ],
+      [
+        "á»",
+        "Ľi"
+      ],
+      [
+        "Ġc",
+        "Æ°"
+      ],
+      [
+        "Ġc",
+        "Æ¡"
+      ],
+      [
+        "Ġc",
+        "áº¯n"
+      ],
+      [
+        "Ġc",
+        "á»ĳi"
+      ],
+      [
+        "Ġc",
+        "am"
+      ],
+      [
+        "Ġch",
+        "á»Ŀ"
+      ],
+      [
+        "Ġch",
+        "Ãły"
+      ],
+      [
+        "Ġch",
+        "anh"
+      ],
+      [
+        "Ġch",
+        "á»©ng"
+      ],
+      [
+        "Ġt",
+        "á»©"
+      ],
+      [
+        "Ġt",
+        "Ã¡o"
+      ],
+      [
+        "Ġt",
+        "anh"
+      ],
+      [
+        "Ġt",
+        "ung"
+      ],
+      [
+        "Ġt",
+        "áº¡m"
+      ],
+      [
+        "Ġm",
+        "á»įc"
+      ],
+      [
+        "Ġm",
+        "áº¯t"
+      ],
+      [
+        "Ġm",
+        "á»Ŀi"
+      ],
+      [
+        "Ġm",
+        "inh"
+      ],
+      [
+        "Ġm",
+        "á»Ľi"
+      ],
+      [
+        "Ġv",
+        "Æ°á»Ŀ"
+      ],
+      [
+        "Ġv",
+        "Ã¬"
+      ],
+      [
+        "ĠÄĳ",
+        "Ã³"
+      ],
+      [
+        "ĠÄĳ",
+        "áº¿"
+      ],
+      [
+        "ĠÄĳ",
+        "áº¡"
+      ],
+      [
+        "ĠÄĳ",
+        "Æ¡n"
+      ],
+      [
+        "ĠÄĳ",
+        "uá»"
+      ],
+      [
+        "Ġb",
+        "ao"
+      ],
+      [
+        "Ġb",
+        "Ã¬nh"
+      ],
+      [
+        "Ġb",
+        "Ã£"
+      ],
+      [
+        "Ġb",
+        "Ã¹"
+      ],
+      [
+        "Ġb",
+        "Äĥng"
+      ],
+      [
+        "Ġb",
+        "iá»ĥn"
+      ],
+      [
+        "Ġb",
+        "Ã¨"
+      ],
+      [
+        "us",
+        "hi"
+      ],
+      [
+        "Ġl",
+        "Ã´ng"
+      ],
+      [
+        "Ġl",
+        "on"
+      ],
+      [
+        "Ġl",
+        "Æ°Æ¡ng"
+      ],
+      [
+        "Ġl",
+        "oÃłi"
+      ],
+      [
+        "Ġg",
+        "Ãł"
+      ],
+      [
+        "Ġg",
+        "áº¡"
+      ],
+      [
+        "Ġvá»",
+        "ĳn"
+      ],
+      [
+        "Ġn",
+        "Æ¡i"
+      ],
+      [
+        "Ġn",
+        "áº¥m"
+      ],
+      [
+        "Ġn",
+        "Ãºt"
+      ],
+      [
+        "Ã³",
+        "a"
+      ],
+      [
+        "Ġk",
+        "Ãª"
+      ],
+      [
+        "Ġk",
+        "iáº¿"
+      ],
+      [
+        "Ġk",
+        "eo"
+      ],
+      [
+        "Ġk",
+        "ÃŃch"
+      ],
+      [
+        "Ġth",
+        "Ãº"
+      ],
+      [
+        "Ġth",
+        "á»£"
+      ],
+      [
+        "Ġth",
+        "á»ĳng"
+      ],
+      [
+        "Ġth",
+        "Æ°á»Ľc"
+      ],
+      [
+        "Ġth",
+        "áº§y"
+      ],
+      [
+        "Ġs",
+        "á»Ń"
+      ],
+      [
+        "Ġs",
+        "Ã³c"
+      ],
+      [
+        "Ġs",
+        "ushi"
+      ],
+      [
+        "Ġh",
+        "áº³"
+      ],
+      [
+        "Ġh",
+        "ai"
+      ],
+      [
+        "Ġnh",
+        "Ã¬n"
+      ],
+      [
+        "Ġtr",
+        "Ã´ng"
+      ],
+      [
+        "Ġtr",
+        "Ãºng"
+      ],
+      [
+        "Ġng",
+        "Ã´i"
+      ],
+      [
+        "Ġng",
+        "á»į"
+      ],
+      [
+        "Ġng",
+        "á»Ŀ"
+      ],
+      [
+        "Ġng",
+        "Ã£"
+      ],
+      [
+        "Ġng",
+        "Æ°á»£c"
+      ],
+      [
+        "Ġng",
+        "oáº¡i"
+      ],
+      [
+        "Ġr",
+        "Æ¡i"
+      ],
+      [
+        "Ġr",
+        "áº¯n"
+      ],
+      [
+        "Ġr",
+        "á»¥"
+      ],
+      [
+        "Ġr",
+        "á»Ŀi"
+      ],
+      [
+        "Ġr",
+        "áº§u"
+      ],
+      [
+        "áº¡",
+        "y"
+      ],
+      [
+        "Ġgi",
+        "Ã²n"
+      ],
+      [
+        "Ġgi",
+        "áº£i"
+      ],
+      [
+        "Ġgi",
+        "eo"
+      ],
+      [
+        "Ġgi",
+        "á»¯"
+      ],
+      [
+        "áº¯",
+        "p"
+      ],
+      [
+        "ĠÄĳá»",
+        "§"
+      ],
+      [
+        "ĠÄĳá»",
+        "ģu"
+      ],
+      [
+        "Ġkh",
+        "á»ıi"
+      ],
+      [
+        "Ġkh",
+        "Ã³a"
+      ],
+      [
+        "Ġkh",
+        "áº¯p"
+      ],
+      [
+        "Ġx",
+        "Ã¢y"
+      ],
+      [
+        "Ġd",
+        "Ã¡n"
+      ],
+      [
+        "Ġd",
+        "ÃŃnh"
+      ],
+      [
+        "Ġd",
+        "á»«ng"
+      ],
+      [
+        "Ġd",
+        "á»ħ"
+      ],
+      [
+        "Ġd",
+        "áº¡y"
+      ],
+      [
+        "Ġqu",
+        "áº§y"
+      ],
+      [
+        "Ġcá»",
+        "«u"
+      ],
+      [
+        "003",
+        "2"
+      ],
+      [
+        "003",
+        "5"
+      ],
+      [
+        "003",
+        "6"
+      ],
+      [
+        "003",
+        "8"
+      ],
+      [
+        "Ġbáº£",
+        "n"
+      ],
+      [
+        "002",
+        "1"
+      ],
+      [
+        "002",
+        "4"
+      ],
+      [
+        "002",
+        "8"
+      ],
+      [
+        "001",
+        "0"
+      ],
+      [
+        "001",
+        "2"
+      ],
+      [
+        "001",
+        "5"
+      ],
+      [
+        "001",
+        "6"
+      ],
+      [
+        "004",
+        "2"
+      ],
+      [
+        "004",
+        "4"
+      ],
+      [
+        "004",
+        "9"
+      ],
+      [
+        "ĠÄĳá»ĵ",
+        "n"
+      ],
+      [
+        "005",
+        "1"
+      ],
+      [
+        "005",
+        "2"
+      ],
+      [
+        "005",
+        "3"
+      ],
+      [
+        "005",
+        "7"
+      ],
+      [
+        "ĠcÃ¡",
+        "nh"
+      ],
+      [
+        "006",
+        "0"
+      ],
+      [
+        "006",
+        "2"
+      ],
+      [
+        "006",
+        "3"
+      ],
+      [
+        "006",
+        "5"
+      ],
+      [
+        "006",
+        "6"
+      ],
+      [
+        "000",
+        "9"
+      ],
+      [
+        "ĠmÃł",
+        "y"
+      ],
+      [
+        "ĠÄĲ",
+        "á»įc"
+      ],
+      [
+        "ĠÄĳÃ¡",
+        "ng"
+      ],
+      [
+        "ĠC",
+        "Ã¡"
+      ],
+      [
+        "ĠC",
+        "Ã´ng"
+      ],
+      [
+        "Ġdá»±",
+        "ng"
+      ],
+      [
+        "Th",
+        "áº§y"
+      ],
+      [
+        "Ġho",
+        "áº¡t"
+      ],
+      [
+        "ĠM",
+        "ay"
+      ],
+      [
+        "Ġbu",
+        "Ã´ng"
+      ],
+      [
+        "ĠkhÃ¡",
+        "t"
+      ],
+      [
+        "Ġváº",
+        "«n"
+      ],
+      [
+        "ĠÄĳá»Ļ",
+        "ng"
+      ],
+      [
+        "Ġcá»Ń",
+        "a"
+      ],
+      [
+        "am",
+        "b"
+      ],
+      [
+        "ĠnhÃ¡",
+        "p"
+      ],
+      [
+        "ĠnhÃ¡",
+        "t"
+      ],
+      [
+        "ÄĲ",
+        "á»«ng"
+      ],
+      [
+        "ĠL",
+        "amb"
+      ],
+      [
+        "ĠP",
+        "ython"
+      ],
+      [
+        "ĠTh",
+        "áº¿"
+      ],
+      [
+        "Ġná»¯",
+        "a"
+      ],
+      [
+        "Ġlá»Ľ",
+        "p"
+      ],
+      [
+        "Tr",
+        "Æ°á»Ľc"
+      ],
+      [
+        "bÃ¡",
+        "nh"
+      ],
+      [
+        "ghi",
+        "ni"
+      ],
+      [
+        "or",
+        "ghini"
+      ],
+      [
+        "Ãį",
+        "t"
+      ],
+      [
+        "ĠAp",
+        "ple"
+      ],
+      [
+        "ĠGi",
+        "á»Ŀ"
+      ],
+      [
+        "ĠSo",
+        "l"
+      ],
+      [
+        "ĠcÆ°",
+        "ng"
+      ],
+      [
+        "ĠvÆ°á»Ŀ",
+        "n"
+      ],
+      [
+        "ĠÄĳáº¿",
+        "m"
+      ],
+      [
+        "ĠÄĳáº¡",
+        "p"
+      ],
+      [
+        "ĠÄĳuá»",
+        "ķi"
+      ],
+      [
+        "ĠbÃ£",
+        "o"
+      ],
+      [
+        "Ġgáº¡",
+        "ch"
+      ],
+      [
+        "Ġkiáº¿",
+        "m"
+      ],
+      [
+        "Ġháº³",
+        "n"
+      ],
+      [
+        "Ġngá»į",
+        "t"
+      ],
+      [
+        "Ġrá»¥",
+        "m"
+      ],
+      [
+        "Ġgiá»¯",
+        "a"
+      ],
+      [
+        "'",
+        "."
+      ],
+      [
+        ".",
+        "'<|"
+      ],
+      [
+        "?",
+        "'"
+      ],
+      [
+        "B",
+        "Ã¡"
+      ],
+      [
+        "B",
+        "Ã´ng"
+      ],
+      [
+        "B",
+        "áº¡n"
+      ],
+      [
+        "C",
+        "á»©"
+      ],
+      [
+        "C",
+        "Ã¢y"
+      ],
+      [
+        "K",
+        "á»ĩ"
+      ],
+      [
+        "L",
+        "á»£n"
+      ],
+      [
+        "M",
+        "Ã´"
+      ],
+      [
+        "M",
+        "Ã¬"
+      ],
+      [
+        "M",
+        "iáº¿"
+      ],
+      [
+        "M",
+        "uá»ĳn"
+      ],
+      [
+        "N",
+        "gÆ°á»Ŀi"
+      ],
+      [
+        "T",
+        "á»±"
+      ],
+      [
+        "e",
+        "w"
+      ],
+      [
+        "e",
+        "st"
+      ],
+      [
+        "g",
+        "e"
+      ],
+      [
+        "h",
+        "Ã´"
+      ],
+      [
+        "h",
+        "Ã¬n"
+      ],
+      [
+        "i",
+        "á»ĩn"
+      ],
+      [
+        "i",
+        "Ãª"
+      ],
+      [
+        "i",
+        "Ãªn"
+      ],
+      [
+        "i",
+        "ew"
+      ],
+      [
+        "l",
+        "l"
+      ],
+      [
+        "o",
+        "áº¡n"
+      ],
+      [
+        "u",
+        "a"
+      ],
+      [
+        "u",
+        "ll"
+      ],
+      [
+        "v",
+        "iew"
+      ],
+      [
+        "y",
+        "m"
+      ],
+      [
+        "¥",
+        "n"
+      ],
+      [
+        "¥",
+        "p"
+      ],
+      [
+        "Ġ",
+        "X"
+      ],
+      [
+        "Ġ",
+        "Ãł"
+      ],
+      [
+        "Ġ",
+        "st"
+      ],
+      [
+        "Ġ",
+        "Ã¢"
+      ],
+      [
+        "Ġ",
+        "Ã½"
+      ],
+      [
+        "Ġ",
+        "Æ°á»Ľc"
+      ],
+      [
+        "Ġ",
+        "Æ¡n"
+      ],
+      [
+        "Ġ",
+        "BÃ¡"
+      ],
+      [
+        "Ġc",
+        "á»Ļ"
+      ],
+      [
+        "Ġc",
+        "Ãłnh"
+      ],
+      [
+        "Ġc",
+        "Ã¹ng"
+      ],
+      [
+        "Ġc",
+        "á»ĳc"
+      ],
+      [
+        "Ġc",
+        "áº§n"
+      ],
+      [
+        "áº",
+        "½"
+      ],
+      [
+        "Ġch",
+        "Ã³"
+      ],
+      [
+        "Ġch",
+        "Ãº"
+      ],
+      [
+        "Ġch",
+        "áº¡m"
+      ],
+      [
+        "Ġch",
+        "ua"
+      ],
+      [
+        "Ġt",
+        "a"
+      ],
+      [
+        "Ġt",
+        "áº¥t"
+      ],
+      [
+        "Ġt",
+        "áº·"
+      ],
+      [
+        "Ġt",
+        "Æ°Æ¡ng"
+      ],
+      [
+        "Ġm",
+        "er"
+      ],
+      [
+        "Ġm",
+        "á»įi"
+      ],
+      [
+        "Ġm",
+        "áº¯c"
+      ],
+      [
+        "Ġm",
+        "Ã¹a"
+      ],
+      [
+        "Ġm",
+        "áº½"
+      ],
+      [
+        "Ġv",
+        "Ã´"
+      ],
+      [
+        "Ġv",
+        "á»ĩ"
+      ],
+      [
+        "Ġv",
+        "Å©"
+      ],
+      [
+        "Ġv",
+        "Äĥn"
+      ],
+      [
+        "Ãł",
+        "o"
+      ],
+      [
+        "Ãł",
+        "u"
+      ],
+      [
+        "á»ĩ",
+        "m"
+      ],
+      [
+        "á»ĩ",
+        "nh"
+      ],
+      [
+        "ĠÄĳ",
+        "a"
+      ],
+      [
+        "ĠÄĳ",
+        "iá»ĥn"
+      ],
+      [
+        "á»Ļ",
+        "m"
+      ],
+      [
+        "00",
+        "00"
+      ],
+      [
+        "Ġb",
+        "a"
+      ],
+      [
+        "Ġb",
+        "á»Ļ"
+      ],
+      [
+        "Ġb",
+        "áº¿"
+      ],
+      [
+        "Ġb",
+        "Ã´ng"
+      ],
+      [
+        "Ġb",
+        "Ã¡n"
+      ],
+      [
+        "Ġb",
+        "á»¥"
+      ],
+      [
+        "Ġb",
+        "Ãłn"
+      ],
+      [
+        "Ġb",
+        "Ã©"
+      ],
+      [
+        "Ġb",
+        "áº±"
+      ],
+      [
+        "Ġb",
+        "á»ĩnh"
+      ],
+      [
+        "uy",
+        "Ãªn"
+      ],
+      [
+        "Ġchuy",
+        "Ãªn"
+      ],
+      [
+        "as",
+        "h"
+      ],
+      [
+        "Ġl",
+        "Ã£"
+      ],
+      [
+        "Ġl",
+        "ai"
+      ],
+      [
+        "Ġl",
+        "Äĥn"
+      ],
+      [
+        "Ġg",
+        "Ã¢y"
+      ],
+      [
+        "Ġg",
+        "á»ĳi"
+      ],
+      [
+        "Ġg",
+        "ym"
+      ],
+      [
+        "Ġvá»",
+        "¥n"
+      ],
+      [
+        "Ġn",
+        "á»¥"
+      ],
+      [
+        "Ġn",
+        "uá»ĳt"
+      ],
+      [
+        "Ġk",
+        "em"
+      ],
+      [
+        "Ġk",
+        "á»ĭp"
+      ],
+      [
+        "Ġth",
+        "ao"
+      ],
+      [
+        "Ġth",
+        "iáº¿"
+      ],
+      [
+        "Ġth",
+        "ay"
+      ],
+      [
+        "Ġth",
+        "áº¥t"
+      ],
+      [
+        "Ġth",
+        "á»Ń"
+      ],
+      [
+        "Ġth",
+        "áº¯c"
+      ],
+      [
+        "Ġth",
+        "eo"
+      ],
+      [
+        "Ġth",
+        "Ãªm"
+      ],
+      [
+        "Ġth",
+        "á»§"
+      ],
+      [
+        "Ġth",
+        "iÃªn"
+      ],
+      [
+        "Ġs",
+        "Ãºt"
+      ],
+      [
+        "Ġs",
+        "áº»"
+      ],
+      [
+        "Ġs",
+        "oáº¡n"
+      ],
+      [
+        "Ġh",
+        "ay"
+      ],
+      [
+        "Ġh",
+        "áº¯t"
+      ],
+      [
+        "Ġh",
+        "Æ¡n"
+      ],
+      [
+        "Ġh",
+        "iá»ĩn"
+      ],
+      [
+        "Ġh",
+        "Ãłu"
+      ],
+      [
+        "Ġnh",
+        "áºŃ"
+      ],
+      [
+        "Ġnh",
+        "áº§"
+      ],
+      [
+        "Ġnh",
+        "á»ı"
+      ],
+      [
+        "Ġnh",
+        "á»ĭp"
+      ],
+      [
+        "Ġtr",
+        "Ã¬"
+      ],
+      [
+        "Ġtr",
+        "áº£"
+      ],
+      [
+        "Ġtr",
+        "áº¯"
+      ],
+      [
+        "Ġtr",
+        "ang"
+      ],
+      [
+        "Ġtr",
+        "á»Ł"
+      ],
+      [
+        "Ġtr",
+        "Æ°á»£"
+      ],
+      [
+        "Ġtr",
+        "á»Ŀi"
+      ],
+      [
+        "Ġtr",
+        "á»ĳng"
+      ],
+      [
+        "Ġtr",
+        "Æ°á»Ľc"
+      ],
+      [
+        "Ġtr",
+        "Ãªu"
+      ],
+      [
+        "Ġtr",
+        "á»Ļm"
+      ],
+      [
+        "Ġng",
+        "á»įc"
+      ],
+      [
+        "Ġng",
+        "á»§"
+      ],
+      [
+        "ĠvÃł",
+        "i"
+      ],
+      [
+        "ĠvÃł",
+        "ng"
+      ],
+      [
+        "Ġr",
+        "iÃª"
+      ],
+      [
+        "Ġgi",
+        "t"
+      ],
+      [
+        "Ġgi",
+        "áº£"
+      ],
+      [
+        "Ġgi",
+        "áº¥y"
+      ],
+      [
+        "Ġgi",
+        "áº¥u"
+      ],
+      [
+        "Ġgi",
+        "á»ıi"
+      ],
+      [
+        "ĠÄĳá»",
+        "ı"
+      ],
+      [
+        "Ġkh",
+        "iáº¿"
+      ],
+      [
+        "Ġx",
+        "a"
+      ],
+      [
+        "Ġx",
+        "Ãł"
+      ],
+      [
+        "Ġx",
+        "Æ°Æ¡ng"
+      ],
+      [
+        "Ġx",
+        "uyÃªn"
+      ],
+      [
+        "Ġd",
+        "anh"
+      ],
+      [
+        "Ġd",
+        "á»ĳc"
+      ],
+      [
+        "Ġp",
+        "ull"
+      ],
+      [
+        "Ġph",
+        "u"
+      ],
+      [
+        "Ġph",
+        "Ã´"
+      ],
+      [
+        "Ġph",
+        "Ã¡"
+      ],
+      [
+        "Ġqu",
+        "Ã½"
+      ],
+      [
+        "Ġqu",
+        "áº§n"
+      ],
+      [
+        "Ġcá»",
+        "¥"
+      ],
+      [
+        "ĠsÃ¡",
+        "t"
+      ],
+      [
+        "003",
+        "0"
+      ],
+      [
+        "003",
+        "1"
+      ],
+      [
+        "003",
+        "3"
+      ],
+      [
+        "003",
+        "7"
+      ],
+      [
+        "Ġchá»",
+        "¥p"
+      ],
+      [
+        "002",
+        "0"
+      ],
+      [
+        "002",
+        "2"
+      ],
+      [
+        "002",
+        "3"
+      ],
+      [
+        "002",
+        "6"
+      ],
+      [
+        "002",
+        "9"
+      ],
+      [
+        "001",
+        "1"
+      ],
+      [
+        "001",
+        "3"
+      ],
+      [
+        "001",
+        "4"
+      ],
+      [
+        "001",
+        "7"
+      ],
+      [
+        "001",
+        "8"
+      ],
+      [
+        "004",
+        "0"
+      ],
+      [
+        "004",
+        "1"
+      ],
+      [
+        "004",
+        "3"
+      ],
+      [
+        "004",
+        "5"
+      ],
+      [
+        "004",
+        "6"
+      ],
+      [
+        "004",
+        "8"
+      ],
+      [
+        "005",
+        "0"
+      ],
+      [
+        "005",
+        "4"
+      ],
+      [
+        "005",
+        "5"
+      ],
+      [
+        "005",
+        "6"
+      ],
+      [
+        "005",
+        "8"
+      ],
+      [
+        "005",
+        "9"
+      ],
+      [
+        "ĠcÃ¡",
+        "i"
+      ],
+      [
+        "Ã£",
+        "n"
+      ],
+      [
+        "006",
+        "1"
+      ],
+      [
+        "006",
+        "4"
+      ],
+      [
+        "006",
+        "7"
+      ],
+      [
+        "006",
+        "8"
+      ],
+      [
+        "Ġngh",
+        "Ä©"
+      ],
+      [
+        "ĠbÃ¡",
+        "o"
+      ],
+      [
+        "000",
+        "1"
+      ],
+      [
+        "000",
+        "2"
+      ],
+      [
+        "000",
+        "3"
+      ],
+      [
+        "000",
+        "4"
+      ],
+      [
+        "000",
+        "5"
+      ],
+      [
+        "000",
+        "7"
+      ],
+      [
+        "000",
+        "8"
+      ],
+      [
+        "ĠÄĳi",
+        "á»ĩn"
+      ],
+      [
+        "Ġcáº£",
+        "nh"
+      ],
+      [
+        "ĠÄĳÃ¡",
+        "y"
+      ],
+      [
+        "ĠC",
+        "áºŃu"
+      ],
+      [
+        "Ġra",
+        "u"
+      ],
+      [
+        "Ġnhi",
+        "á»ĩm"
+      ],
+      [
+        "ĠN",
+        "hÃ¬n"
+      ],
+      [
+        "Ġho",
+        "Ã£n"
+      ],
+      [
+        "ĠM",
+        "Ã¬"
+      ],
+      [
+        "Ġti",
+        "Ãªu"
+      ],
+      [
+        "Ġti",
+        "á»ģu"
+      ],
+      [
+        "Ġbiáº¿",
+        "n"
+      ],
+      [
+        "Ġxe",
+        "m"
+      ],
+      [
+        "ĠphÃŃ",
+        "a"
+      ],
+      [
+        "Ġy",
+        "Ãªn"
+      ],
+      [
+        "ĠkhÃ¡",
+        "c"
+      ],
+      [
+        "ĠkhÃ¡",
+        "m"
+      ],
+      [
+        "Ġmáº·",
+        "n"
+      ],
+      [
+        "ÄĲ",
+        "á»ĥ"
+      ],
+      [
+        "ĠL",
+        "á»£n"
+      ],
+      [
+        "ĠP",
+        "hÃ´"
+      ],
+      [
+        "ĠTh",
+        "anh"
+      ],
+      [
+        "Ġvá»£",
+        "t"
+      ],
+      [
+        "Ġlá»Ľ",
+        "n"
+      ],
+      [
+        "Ch",
+        "Ã³"
+      ],
+      [
+        "Ch",
+        "Ãło"
+      ],
+      [
+        "qu",
+        "ang"
+      ],
+      [
+        "qu",
+        "est"
+      ],
+      [
+        "Ġcuá»Ļ",
+        "c"
+      ],
+      [
+        "Ġcuá»Ļ",
+        "n"
+      ],
+      [
+        "Ġtiáº¿",
+        "t"
+      ],
+      [
+        "Ġtiáº¿",
+        "ng"
+      ],
+      [
+        "Ġtá»ı",
+        "a"
+      ],
+      [
+        "Ġmáº¡",
+        "o"
+      ],
+      [
+        "Ġmáº¡",
+        "nh"
+      ],
+      [
+        "ĠlÃ¡",
+        "i"
+      ],
+      [
+        "ĠlÃ¡",
+        "ch"
+      ],
+      [
+        "Ġre",
+        "view"
+      ],
+      [
+        "Ġre",
+        "quest"
+      ],
+      [
+        "MÃ´",
+        "n"
+      ],
+      [
+        "Miáº¿",
+        "ng"
+      ],
+      [
+        "Ġst",
+        "ash"
+      ],
+      [
+        "ĠÃ¢",
+        "m"
+      ],
+      [
+        "ĠBÃ¡",
+        "c"
+      ],
+      [
+        "Ġtáº·",
+        "ng"
+      ],
+      [
+        "Ġmer",
+        "ge"
+      ],
+      [
+        "Ġbáº¿",
+        "p"
+      ],
+      [
+        "Ġbá»¥",
+        "ng"
+      ],
+      [
+        "Ġbáº±",
+        "ng"
+      ],
+      [
+        "ĠlÃ£",
+        "ng"
+      ],
+      [
+        "Ġthiáº¿",
+        "u"
+      ],
+      [
+        "ĠnháºŃ",
+        "n"
+      ],
+      [
+        "Ġnháº§",
+        "m"
+      ],
+      [
+        "Ġtráº¯",
+        "ng"
+      ],
+      [
+        "ĠtrÆ°á»£",
+        "t"
+      ],
+      [
+        "ĠriÃª",
+        "ng"
+      ],
+      [
+        "Ġkhiáº¿",
+        "n"
+      ],
+      [
+        "ĠnghÄ©",
+        "a"
+      ]
+    ]
+  }
+}

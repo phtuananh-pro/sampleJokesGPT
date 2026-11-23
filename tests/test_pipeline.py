@@ -15,8 +15,8 @@ class TopicTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Read immutable source metadata once for the topic/schema tests."""
-        cls.rows = [json.loads(s) for s in (DATA / "jokes_clean.jsonl").read_text(encoding="utf-8").splitlines()]
-        cls.catalog = json.loads((DATA / "topics.json").read_text(encoding="utf-8"))["topic_keyword_patterns"]
+        cls.rows = [json.loads(s) for s in (DATA / "jokes_clean_en.jsonl").read_text(encoding="utf-8").splitlines()]
+        cls.catalog = json.loads((DATA / "topics_en.json").read_text(encoding="utf-8"))["topic_keyword_patterns"]
 
     def test_schema_and_count(self):
         """Validate the reviewed JSONL count and necessary training fields."""

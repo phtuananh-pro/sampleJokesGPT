@@ -57,21 +57,19 @@ INCOMPLETE_MESSAGES = {
 
 SPEAKER_LABELS = {
     "en": ("You:", "Joke bot:"),
-    "fr": ("Vous :", "Bot blagues :"),
-    "vi": ("Bạn:", "Bot kể chuyện cười:"),
+    "fr": ("Vous :", "Bot blagues:"),
+    "vi": ("Bạn:", "Bot hài:"),
 }
 
 
 def data_path(language: str) -> Path:
     """English keeps the original filename to avoid breaking prior usage."""
-    return Path("data/jokes_clean.jsonl" if language == "en"
-                else f"data/jokes_clean_{language}.jsonl")
+    return f"data/jokes_clean_{language}.jsonl"
 
 
 def topics_path(language: str) -> Path:
     """Return the taxonomy matching the selected corpus language."""
-    return Path("data/topics.json" if language == "en"
-                else f"data/topics_{language}.json")
+    return f"data/topics_{language}.json"
 
 
 def training_model_dir(language: str) -> Path:

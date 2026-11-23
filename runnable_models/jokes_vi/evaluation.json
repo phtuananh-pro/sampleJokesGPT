@@ -1,0 +1,113 @@
+{
+  "language": "vi",
+  "count": 20,
+  "status_counts": {
+    "general": 6,
+    "topic": 12,
+    "fallback": 2,
+    "incomplete": 0
+  },
+  "results": [
+    {
+      "prompt": "Kể cho tôi một chuyện cười.",
+      "status": "general",
+      "answer": "Tôi bảo vợ kẻ lông mày hơi cao. Cô ấy trông ngạc nhiên hẳn lên."
+    },
+    {
+      "prompt": "Kể một câu chuyện cười kiểu bố.",
+      "status": "general",
+      "answer": "Sao cá vàng đi học? Để trở thành cá... có học!"
+    },
+    {
+      "prompt": "Kể một câu chơi chữ.",
+      "status": "general",
+      "answer": "Tôi từng làm thợ bánh, nhưng chẳng kiếm đủ 'bánh' để sống."
+    },
+    {
+      "prompt": "Kể một câu chuyện cười ngắn.",
+      "status": "general",
+      "answer": "Tôi định kể chuyện ở xưởng bàn phím, nhưng tìm mãi không ra phím nào để bắt đầu."
+    },
+    {
+      "prompt": "Kể một chuyện cười dựa trên chơi chữ.",
+      "status": "general",
+      "answer": "Trước đây tôi làm lập trình viên. Tôi viết mã suốt ngày đêm mà không tìm ra nút tạm dừng."
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về động vật và thú cưng.",
+      "status": "topic",
+      "answer": "Lợn hay gọi điện trêu người khác gọi là gì? Lợn... chuyên phá máy!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về các loài chim.",
+      "status": "topic",
+      "answer": "Môn học yêu thích của chim là gì? Thanh nhạc, tất nhiên rồi!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về cơ thể và ngoại hình.",
+      "status": "topic",
+      "answer": "Tôi bị lon nước ngọt rơi trúng đầu. May mà là nước giải khát, không phải gạch!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về sách và đọc viết.",
+      "status": "topic",
+      "answer": "Tôi hỏi cô bán sách: 'Kệ sách tự lực ở đâu?' Cô ấy đáp: 'Tự lực mà còn hỏi tôi à?'"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về nhà cửa và xây dựng.",
+      "status": "topic",
+      "answer": "Bức tường này nói gì với bức tường kia? 'Hẹn gặp ở góc nhé!'"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về đồ uống, cà phê và trà.",
+      "status": "topic",
+      "answer": "Một con châu chấu vào quán. Người pha chế bảo: 'Ở đây có món đồ uống mang tên cậu đấy!' Nó ngạc nhiên: 'Thật á? Có món tên Tí sao?'"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về cảm xúc và tính cách.",
+      "status": "topic",
+      "answer": "Vì sao sách toán buồn? Vì nó có quá nhiều bài toán hóc búa."
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về đồ ăn và nấu nướng.",
+      "status": "topic",
+      "answer": "Mì giả thì gọi là gì? Mì... mạo danh!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về bạn bè và con người.",
+      "status": "fallback",
+      "answer": "Tôi chưa tìm được chuyện cười đúng chủ đề, nhưng đây là một chuyện khác: Sao cây nấm được mời đi tiệc khắp nơi? Vì ai cũng bảo nó rất 'nấm' tính!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về nhà ở và sinh hoạt.",
+      "status": "general",
+      "answer": "Tôi làm dự án thang máy. Công việc cứ lên lên xuống xuống!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về nghề nghiệp và công việc.",
+      "status": "fallback",
+      "answer": "Tôi chưa tìm được chuyện cười đúng chủ đề, nhưng đây là một chuyện khác: Sao lập trình viên nghỉ việc? Vì chờ mãi không được tăng lương, chỉ được tăng kích thước mảng!"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về toán học và các con số.",
+      "status": "topic",
+      "answer": "Thầy toán bảo tôi chỉ ở mức trung bình. Tôi đáp: 'Ít ra em vẫn còn nằm trong thống kê!'"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về âm nhạc và nhạc cụ.",
+      "status": "topic",
+      "answer": "Tôi định làm tay trống, nhưng chẳng theo kịp nhịp đời."
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về cây cối và làm vườn.",
+      "status": "topic",
+      "answer": "Cây nói với bác tiều phu: 'Để tôi yên, tôi mệt rã cả cành rồi!'"
+    },
+    {
+      "prompt": "Kể cho tôi một chuyện cười về lập trình.",
+      "status": "topic",
+      "answer": "Sao lập trình viên nghỉ việc? Vì chờ mãi không được tăng lương, chỉ được tăng kích thước mảng!"
+    }
+  ],
+  "limits": "EOS and lexical topicality are not human humor-quality assessments."
+}
