@@ -1,74 +1,117 @@
-"""Convert natural-language joke requests into the training topic vocabulary.
+"""Map a user's joke request to the exact prompt format used during training.
 
-Topic routing reads a *taxonomy*, never a collection of jokes. No retrieval is
-performed. The same topic name is used in training and inference so the GPT
-can learn its association with joke completions (FMg Part IV: conditioning).
+Topic classification is intentionally simple and transparent: regular
+expressions inspect the request, not a joke database. The same canonical
+prompts must be used in training and inference for each language.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
 
+from .i18n import GENERAL_PROMPTS, STYLE_PROMPTS, TOPIC_PROMPT_TEMPLATES
+
 
 @dataclass(frozen=True)
 class JokeRequest:
-    """A canonical training prompt plus the detected domain, if supported."""
-    prompt: str       # canonical user prefix used during model training
-    topic: str | None  # supported subject name, if detected
-    keyword: str | None  # matched request word for weak output validation
+    """Resolved generation prompt and optional topic/keyword diagnostics."""
+    prompt: str
+    topic: str | None
+    keyword: str | None
 
 
-def topic_prompt(topic: str) -> str:
-    """Build exactly the same prompt in training and interactive inference."""
-    # Consistent wording matters: conditional generation uses the same
-    # context tokens as the corresponding training examples.
-    return f"Tell me a joke about {topic.replace('_', ' and ')}."
+# Each language has its own preposition for the requested joke subject.
+SUBJECT_PREFIXES = {
+    "en": r"\b(?:about|on)\s+(.+)",
+    "fr": r"\b(?:sur|concernant|à\s+propos\s+de|au\s+sujet\s+de)\s+(.+)",
+    "vi": r"\b(?:về|liên\s+quan\s+đến)\s+(.+)",
+}
+
+# Styles are independent of subjects: a user can ask for a pun or a joke
+# about food. Prefer a subject when the request contains both.
+STYLE_REQUEST_PATTERNS = {
+    "en": (
+        ("pun", r"\b(?:pun|puns|punny)\b"),
+        ("dad_joke", r"\b(?:dad\s+jokes?|groaner)\b"),
+        ("one_liner", r"\b(?:one[- ]liners?|short\s+joke)\b"),
+        ("wordplay", r"\b(?:wordplay|play\s+on\s+words)\b"),
+    ),
+    "fr": (
+        ("pun", r"\b(?:calembours?|jeux?\s+de\s+mots)\b"),
+        ("dad_joke", r"\b(?:blagues?\s+de\s+papa)\b"),
+        ("one_liner", r"\b(?:blagues?\s+courtes?|blagues?\s+rapides?)\b"),
+        ("wordplay", r"\b(?:jeux?\s+de\s+mots)\b"),
+    ),
+    "vi": (
+        ("pun", r"\b(?:chơi\s+chữ|câu\s+chơi\s+chữ)\b"),
+        ("dad_joke", r"\b(?:chuyện\s+cười\s+kiểu\s+bố|truyện\s+cười\s+kiểu\s+bố)\b"),
+        ("one_liner", r"\b(?:chuyện\s+cười\s+ngắn|truyện\s+cười\s+ngắn)\b"),
+        ("wordplay", r"\b(?:nói\s+lái|chơi\s+chữ)\b"),
+    ),
+}
+
+
+def topic_prompt(topic: str, language: str = "en",
+                 topic_labels: dict[str, str] | None = None) -> str:
+    """Create a topic request identical to the one seen by the model.
+
+    Stable topic IDs remain English keys in JSONL; only their human-readable
+    prompt label is translated. An older English dataset needs no label table.
+    """
+    label = (topic_labels or {}).get(topic, topic.replace("_", " and "))
+    return TOPIC_PROMPT_TEMPLATES[language].format(topic=label)
 
 
 def topic_matches(text: str, pattern: str) -> bool:
-    """Check a label's lexical pattern against text with word boundaries."""
-    # Boundaries keep 'cat' from matching inside 'education'. Taxonomy
-    # patterns are data/configuration, not a searchable joke corpus.
+    """Check whether a decoded answer contains a subject keyword.
+
+    This is only lexical evidence of relevance, not proof of humor quality.
+    """
     return re.search(r"\b(?:" + pattern + r")\b", text, re.IGNORECASE) is not None
 
 
-def route_request(text: str, topic_patterns: dict[str, str]) -> JokeRequest:
-    """Pick the strongest known topic named in the user's request.
+def route_request(text: str, topic_patterns: dict[str, str],
+                  language: str = "en",
+                  topic_labels: dict[str, str] | None = None) -> JokeRequest:
+    """Route free-form input into a training-compatible language-specific prompt.
 
-    This lightweight lexical classifier is intentionally transparent. It can
-    confuse polysemous words (e.g. a software bug vs. an insect); a model-based
-    intent classifier would be a separate, more advanced system.
+    When several topics match, prefer the longest matching phrase, then the
+    earliest. This heuristic works without an LLM or retrieval system but can
+    misinterpret polysemous words or miss unlisted synonyms.
     """
+    if language not in GENERAL_PROMPTS:
+        raise ValueError(f"Unsupported language: {language}")
+
+    # A phrase following about/sur/về usually expresses user intent.
     lower = text.lower()
-    # Content after "about" or "on" is usually more informative than "joke".
-    match = re.search(r"\b(?:about|on)\s+(.+)", lower)
+    match = re.search(SUBJECT_PREFIXES[language], lower, re.IGNORECASE)
     focus = match.group(1) if match else lower
-    # When several subjects match, prefer a longer phrase and an earlier
-    # occurrence. This transparent heuristic is intentionally imperfect.
-    candidates = []
-    for topic, pattern in topic_patterns.items():
-        found = re.search(r"\b(?:" + pattern + r")\b", focus, re.IGNORECASE)
-        if found:
-            candidates.append((len(found.group()), -found.start(), topic))
-    # If no topic occurs after 'about'/'on', try the entire user sentence.
-    if not candidates and focus != lower:
+
+    # With no explicit subject ("about", "sur", "về"), treat phrases such as
+    # "jeu de mots" / "chơi chữ" as a HUMOR STYLE, not a language topic.
+    # If a subject is explicit ("pun about cats"), subject routing wins.
+    if not match:
+        for style, pattern in STYLE_REQUEST_PATTERNS[language]:
+            if re.search(pattern, lower, re.IGNORECASE):
+                return JokeRequest(STYLE_PROMPTS[language][style], None, None)
+
+    def candidates_for(fragment: str) -> list[tuple[int, int, str, str]]:
+        matches = []
         for topic, pattern in topic_patterns.items():
-            found = re.search(r"\b(?:" + pattern + r")\b", lower, re.IGNORECASE)
-            if found:
-                candidates.append((len(found.group()), -found.start(), topic))
+            hit = re.search(r"\b(?:" + pattern + r")\b", fragment, re.IGNORECASE)
+            if hit:
+                matches.append((len(hit.group()), -hit.start(), topic, hit.group().lower()))
+        return matches
+
+    candidates = candidates_for(focus)
+    if not candidates and focus != lower:
+        candidates = candidates_for(lower)
     if candidates:
-        candidates.sort(reverse=True)
-        _, _, topic = candidates[0]
-        # Record the actual matched phrase, useful for ranking generated jokes.
-        matched = re.search(r"\b(?:" + topic_patterns[topic] + r")\b", focus, re.IGNORECASE)
-        keyword = matched.group().lower() if matched else None
-        return JokeRequest(topic_prompt(topic), topic, keyword)
-    # Humor style is separate from subject matter. Generic questions route
-    # to the broadest prompt that all jokes have seen during training.
-    if re.search(r"\b(?:pun|puns|punny)\b", lower):
-        return JokeRequest("Tell me a pun.", None, None)
-    if re.search(r"\b(?:dad joke|dad jokes|groaner)\b", lower):
-        return JokeRequest("Tell me a dad joke.", None, None)
-    if re.search(r"\b(?:one[- ]liner|short joke)\b", lower):
-        return JokeRequest("Tell me a one-liner.", None, None)
-    return JokeRequest("Tell me a joke.", None, None)
+        # The topic ID is a consistent tie-breaker across repeated runs.
+        _, _, topic, keyword = max(candidates)
+        return JokeRequest(topic_prompt(topic, language, topic_labels), topic, keyword)
+
+    for style, pattern in STYLE_REQUEST_PATTERNS[language]:
+        if re.search(pattern, lower, re.IGNORECASE):
+            return JokeRequest(STYLE_PROMPTS[language][style], None, None)
+    return JokeRequest(GENERAL_PROMPTS[language], None, None)

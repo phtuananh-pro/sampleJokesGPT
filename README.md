@@ -2,7 +2,7 @@
 
 A runnable companion to **Part IV (Transformers)** of the [Frontier Models guide](https://frontiermodels.guide). Train a small **decoder-only Transformer from scratch** to answer requests with complete, topic-relevant jokes.
 
-The goal is a **working educational chatbot**, not a production-grade humor model. Inference uses only learned model weights, a tokenizer, and configuration: **no pretrained language model, joke retrieval, RAG, or external API**.
+The goal is a **working educational chatbot**, not a production-grade humor model. Supports **English (`en`), French (`fr`), and Vietnamese (`vi`)** as independently trained models. Inference uses only learned model weights, a tokenizer, and configuration: **no pretrained language model, joke retrieval, RAG, or external API**.
 
 ## Two ways to learn the Transformer: sampleGPT and jokesGPT
 
@@ -25,21 +25,28 @@ Both [sampleGPT](https://github.com/phtuananh-pro/sampleGPT) and this repository
 ```text
 jokesGPT/
 ├── data/
-│   ├── jokes_clean.jsonl  # pre-curated jokes, one JSON object per line
-│   └── topics.json        # subject names and keyword patterns
+│   ├── jokes_clean.jsonl        # 1,440 curated English jokes
+│   ├── jokes_clean_fr.jsonl     # 69 draft French adaptations (pilot)
+│   ├── jokes_clean_vi.jsonl     # 69 draft Vietnamese adaptations (pilot)
+│   ├── topics.json              # English topic patterns
+│   ├── topics_fr.json           # French labels and keyword patterns
+│   └── topics_vi.json           # Vietnamese labels and keyword patterns
 ├── src/
-│   ├── model.py           # decoder-only Transformer, attention and feed-forward blocks
-│   ├── tokenizer.py       # byte-level BPE and special joke-ID tokens
-│   ├── train.py           # conversation examples, masked loss and training loop
-│   ├── chat.py            # topic-conditioned autoregressive joke generation
-│   ├── topics.py          # keyword routing to training-compatible prompts
-│   └── evaluate.py        # fixed prompts and simple generation diagnostics
-├── tests/                 # focused regression tests
+│   ├── model.py                 # decoder-only Transformer (unchanged for all languages)
+│   ├── tokenizer.py             # language-specific byte-level BPE training
+│   ├── i18n.py                  # localized prompts and default file locations
+│   ├── topics.py                # per-language topic and humor-style routing
+│   ├── train.py                 # next-token training with masked completion loss
+│   ├── chat.py                  # joke generation with no retrieval
+│   └── evaluate.py              # generation diagnostics
+├── runnable_models/
+│   └── jokes_en/                # English checkpoint metadata/tokenizer
+├── tests/
 ├── requirements.txt
 └── README.md
 ```
 
-Training creates a local `models/` folder, ignored by Git.
+Training creates separate local folders `models/jokes_en`, `models/jokes_fr`, and `models/jokes_vi`. These outputs are ignored by Git.
 
 ## Install
 
@@ -63,34 +70,15 @@ python -m pip install -r requirements.txt
 
 `--device auto` uses a supported NVIDIA CUDA GPU when available and otherwise uses CPU. CUDA requires a compatible driver; a separate CUDA Toolkit installation is not normally required by the PyTorch wheel.
 
-## Chat on already trained models
-**Windows PowerShell**
+## Run an already trained model
+
 ```powershell
-python -m src.chat --device auto --model_dir runnable_models/jokes_en
+python -m src.chat -l en --model_dir runnable_models/jokes_en
 ```
 
-**macOS / Linux**
-```powershell
-python -m src.chat --device auto --model_dir runnable_models\jokes_en
-```
+For a fresh clone, the folder must contain **`model.pt`**, `tokenizer.json`, and `config.json`. **The English `model.pt` is not currently tracked in the repository**, although its configuration and tokenizer are; copy your trained weights into `runnable_models/jokes_en/model.pt` and commit them to make the example genuinely runnable without training. The updated `.gitignore` permits `runnable_models/*/model.pt`.
 
-Illustrative examples (actual answers vary):
-
-```text
-You: tell me a joke
-Joke bot: What's a hawk's favorite subject? Fawk-abulary!
-
-You: jokes on teacher
-Joke bot: Why did the music teacher go to the police? Because of the treble!
-
-You: joke on programming
-Joke bot: Why are spiders so good at computer programming? Because they are great at web design.
-
-You: joke on food
-Joke bot: What do you call a confused mushroom? A mixed-up fungi!
-```
-
-Type `exit`, `quit`, or `q` to finish.
+A French or Vietnamese model **cannot reuse English weights**. Train the chosen language separately, then run `python -m src.chat -l fr` or `-l vi`.
 
 ## Dataset
 
@@ -107,41 +95,48 @@ Each JSONL record contains:
 - `style`: humor format, such as pun, one-liner or dad joke.
 - `topics`: zero or more proposed **subject** labels, such as programming or food.
 
-The dataset is already deduplicated and automatically screened. **It has not received exhaustive human review; topic labels and safety screening may be imperfect.** There is **no cleaning script to run**.
+The English dataset is already deduplicated and automatically screened. **It has not received exhaustive human review; topic labels and safety screening may be imperfect.** There is **no cleaning script to run**.
+
+### French and Vietnamese datasets
+
+- `data/jokes_clean_fr.jsonl`: **69 AI-drafted French adaptations**, retaining `source_index` for traceability.
+- `data/jokes_clean_vi.jsonl`: **69 AI-drafted Vietnamese adaptations**, retaining the same source indices.
+- `data/topics_fr.json` and `topics_vi.json`: all **49 stable topic IDs**, with localized labels and keyword patterns.
+
+**Translation status: PILOT — not yet native-speaker validated.** These are draft adapted subsets, **not full translations of the 1,440 English jokes**. Many English puns cannot be translated literally while keeping the punchline. Have native speakers review the localized jokes and expand these corpora before claiming comparable chatbot quality. The program does not silently fall back to English jokes.
 
 ## Train
-**Windows PowerShell**
+
+Choose a language with `-l` / `--language` (default: `en`). Each language uses its own data, topic taxonomy, trained tokenizer, and checkpoint.
+
 ```powershell
-python -m src.train --device auto --out_dir models/jokes_demo
+python -m src.train -l en --device auto
+python -m src.train -l fr --device auto
+python -m src.train -l vi --device auto
 ```
 
-**macOS / Linux**
-```powershell
-python -m src.train --device auto --out_dir models\jokes_demo
-```
+Training reads the selected JSONL and taxonomy, builds complete conversations, learns a byte-level BPE tokenizer, and saves the best checkpoint under `models/jokes_<language>/`. An existing folder requires confirmation before overwrite. Use `--overwrite` to replace it without prompting. **French/Vietnamese are small teaching pilots**; their generated humor will be less varied than English.
 
-The script trains the BPE tokenizer, constructs individual joke conversations, trains the Transformer, and saves the best checkpoint. It asks before replacing an existing output folder. Use `--overwrite` to replace it without prompting.
-
-For a quick **code smoke test** (not a useful trained chatbot):
+For a short code **smoke test** (not a useful trained chatbot):
 
 ```powershell
-python -m src.train --device cpu --max_iters 3 --eval_interval 1 --eval_iters 1 --n_layer 2 --n_embd 128 --batch_size 2 --out_dir models/smoke
+python -m src.train -l fr --device cpu --max_iters 3 --eval_interval 1 --eval_iters 1 --n_layer 2 --n_embd 128 --batch_size 2 --out_dir models/smoke_fr
 ```
 
 ### Model output folder
 
 ```text
-models/jokes/
-├── model.pt        # learned Transformer weights
-├── tokenizer.json  # byte-level BPE merges and special tokens
-└── config.json     # architecture, training, dataset, topic-routing and checkpoint metadata
+models/jokes_fr/
+├── model.pt        # French model weights (independent of English/Vietnamese)
+├── tokenizer.json  # French-trained BPE and joke-ID tokens
+└── config.json     # architecture, language, topic routing, checkpoint metadata
 ```
 
-Only these three files are required for chat. The curated jokes file is **not loaded during inference**.
+These three files are sufficient for inference. The source JSONL is not loaded during chat.
 
 ### Estimation training time
 
-**Illustrative ranges, not measured benchmarks**, using the current device-specific defaults. CPU runs use a smaller model (3 layers, width 192, batch 8, 3,000 updates); CUDA runs use a larger model (5 layers, width 320, batch 24, 12,000 updates). Both use a 256-token context, so the workloads are **not directly comparable**.
+**Illustrative, unbenchmarked ranges** for the current presets; hardware and corpus size affect elapsed time. CPU uses 3 layers, width 192, batch 8, 3,000 steps; CUDA uses 5 layers, width 320, batch 24, 12,000 steps. The workloads are not equivalent.
 
 | Hardware | Example | Rough duration |
 |---|---|---|
@@ -151,21 +146,19 @@ Only these three files are required for chat. The curated jokes file is **not lo
 | Midrange NVIDIA GPU | RTX 3060 / RTX 4060 | 20 minutes–2 hours |
 | High-end NVIDIA GPU | RTX 4090 / RTX 5090 | 10–60 minutes |
 
-Use the training console's elapsed-time and ETA measurements for your own machine; hardware, PyTorch build, thermals and settings affect performance.
+Use your console's measured ETA instead of treating these estimates as guarantees.
 
 ## Chat
 
-**Windows PowerShell**
 ```powershell
-python -m src.chat --device auto --model_dir models/jokes_demo
+python -m src.chat -l en --device auto
+python -m src.chat -l fr --device auto
+python -m src.chat -l vi --device auto
 ```
 
-**macOS / Linux**
-```powershell
-python -m src.train --device auto --model_dir models\jokes_demo
-```
+Chat selects the corresponding `models/jokes_<language>` checkpoint if trained locally, or a complete `runnable_models/jokes_<language>` checkpoint when available. Use `--model_dir` to select a specific model folder. The checkpoint language must match `-l`.
 
-Illustrative examples (actual answers vary):
+Sample English interaction (generated jokes vary):
 
 ```text
 You: tell me a joke
@@ -176,27 +169,26 @@ Joke bot: Why did the music teacher go to the police? Because of the treble!
 
 You: joke on programming
 Joke bot: Why are spiders so good at computer programming? Because they are great at web design.
-
-You: joke on food
-Joke bot: What do you call a confused mushroom? A mixed-up fungi!
 ```
 
-Type `exit`, `quit`, or `q` to finish.
+French and Vietnamese use localized prompts and speaker labels. Type `exit`, `quit`, or `q` to leave.
 
 ## Evaluate and test
 
 ```powershell
 python -m unittest discover -s tests -v
-python -m src.evaluate --device auto
+python -m src.evaluate -l en --device auto
+python -m src.evaluate -l fr --device auto
+python -m src.evaluate -l vi --device auto
 ```
 
-`src.evaluate` generates jokes for 20 fixed prompts and writes `models/jokes/evaluation.json`. It reports general, topic, fallback, and incomplete answers. **These are lightweight diagnostics, not a human evaluation of humor quality.**
+Evaluation writes an `evaluation.json` in the selected model directory. It reports general, topic, fallback and incomplete responses. These are **lexical/format diagnostics, not humor-quality judgments**.
 
 ## How training works
 
 ### 1. Create a conversation from each joke
 
-The trainer reads the curated JSONL and creates different **general, style-specific, and supported topic-specific requests** for each complete joke. Every request teaches the *same* joke answer, rather than mixing together unrelated fragments:
+The trainer reads the selected language's curated JSONL and creates different **localized general, style-specific, and supported topic-specific requests** for each complete joke. Every request teaches the *same* joke answer, rather than mixing together unrelated fragments:
 
 ```text
 <|bos|><|user|>Tell me a joke about animals and pets.<|assistant|><|j0123|>A complete joke...<|eos|>
@@ -232,11 +224,11 @@ The loop samples padded conversation batches, computes the masked loss, backprop
 
 ### 4. Generate one complete answer
 
-Inference maps a request to a training-compatible prompt, samples a learned joke-identity token, then generates text token by token until `<|eos|>` or a safety limit. Incomplete or malformed candidates are rejected. No joke texts, JSONL records, or external index are consulted.
+Inference routes the request in the **checkpoint's language** to a training-compatible prompt, samples a learned joke-identity token, then generates text token by token until `<|eos|>` or a safety limit. Incomplete or malformed candidates are rejected. No joke texts, JSONL records, or external index are consulted.
 
 ## Topic matching
 
-`src/topics.py` maps keywords from the user's request to one of the supported subject labels from `data/topics.json`. The same canonical prompt is used during training and inference; topics with too few labeled examples are not enabled as dedicated prompts.
+`src/topics.py` maps keywords in the selected language to stable topic IDs from `data/topics.json`, `topics_fr.json`, or `topics_vi.json`. `src/i18n.py` supplies the localized prompt grammar. **Training and inference use identical prompts for that language**; topics with too few examples do not get dedicated prompts.
 
 A request such as `joke on programmer` can route to `programming`. Requests for a `pun` or `dad joke` use style prompts. The generator prefers completed answers with topical keyword evidence; if none matches well, it may explicitly offer a general-joke fallback.
 
@@ -252,13 +244,14 @@ The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/kar
 
 ## Training arguments
 
-`python -m src.train --help` lists all options.
+`python -m src.train --help` lists all options. Language-dependent defaults resolve automatically.
 
 | Argument | Default | Purpose |
 |---|---|---|
-| `--data` | `data/jokes_clean.jsonl` | Curated JSONL input |
-| `--topics` | `data/topics.json` | Topic keyword taxonomy |
-| `--out_dir` | `models/jokes` | Output checkpoint directory |
+| `-l`, `--language` | `en` | Language: `en`, `fr`, `vi` (separate data and model) |
+| `--data` | language-dependent | Curated JSONL input |
+| `--topics` | language-dependent | Topic keyword taxonomy |
+| `--out_dir` | `models/jokes_<language>` | Output checkpoint directory |
 | `--device` | `auto` | Prefer CUDA, otherwise CPU |
 | `--max_iters` | CPU 3,000; CUDA 12,000 | Optimization updates |
 | `--batch_size` | CPU 8; CUDA 24 | Conversations per batch |
@@ -271,7 +264,7 @@ The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/kar
 | `--learning_rate` | 0.0003 | AdamW learning rate |
 | `--weight_decay` | 0.05 | AdamW weight decay |
 | `--id_loss_weight` | 5.0 | Extra joke-ID target weight |
-| `--min_topic_examples` | 10 | Minimum examples to enable a topic |
+| `--min_topic_examples` | EN 10; FR/VI 3 | Minimum examples to enable a topic |
 | `--val_fraction` | 0.05 | Fraction of held-out jokes |
 | `--eval_interval` | 200 | Steps between loss evaluations |
 | `--eval_iters` | 8 | Batches per evaluation |
@@ -284,7 +277,8 @@ The teaching approach draws on Andrew Karpathy's [minGPT](https://github.com/kar
 
 | Argument | Default | Purpose |
 |---|---|---|
-| `--model_dir` | `models/jokes` | Folder containing checkpoint, tokenizer and configuration |
+| `-l`, `--language` | `en` | Language: `en`, `fr`, `vi` |
+| `--model_dir` | autodetected for language | Folder containing checkpoint, tokenizer and configuration |
 | `--device` | `auto` | Prefer CUDA, otherwise CPU |
 | `--attempts` | 6 | Maximum generated candidates per user request |
 | `--max_new_tokens` | 240 | Per-candidate maximum generated body tokens |

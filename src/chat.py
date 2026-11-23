@@ -20,6 +20,10 @@ import torch.nn.functional as F
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
 from .topics import JokeRequest, route_request, topic_matches
+from .i18n import (
+    LANGUAGES, FALLBACK_PREFIXES, INCOMPLETE_MESSAGES, SPEAKER_LABELS,
+    chat_model_dir,
+)
 
 
 def log(message: str) -> None:
@@ -204,7 +208,11 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
     """Try multiple neural generations; prefer complete on-topic answers."""
     # Read ONLY the saved taxonomy from config, never the JSONL dataset.
     topic_patterns = cfg["routing"]["topic_patterns"]
-    intent = route_request(request, topic_patterns)
+    language = cfg.get("language", "en")
+    intent = route_request(
+        request, topic_patterns, language,
+        cfg["routing"].get("topic_labels", {}),
+    )
     candidates: list[Candidate] = []
     # Try a few independent neural completions. This helps with occasional
     # malformed output without altering the model or adding retrieval.
@@ -233,7 +241,7 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
         if item.keyword_match and item.topic_match:
             return item.text, "topic"
     if not candidates:
-        return "I couldn't generate a complete joke. Try again.", "incomplete"
+        return INCOMPLETE_MESSAGES[language], "incomplete"
     if intent.topic:
         matches = [item for item in candidates if item.topic_match]
         if matches:
@@ -241,7 +249,7 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
             return selected.text, "topic"
         # Unrelated joke is an explicit, visible fallback, not a silent success.
         selected = max(candidates, key=lambda item: quality_score(item, intent))
-        return "I couldn't find a good match, but here's another joke: " + selected.text, "fallback"
+        return FALLBACK_PREFIXES[language] + selected.text, "fallback"
     selected = max(candidates, key=lambda item: quality_score(item, intent))
     return selected.text, "general"
 
@@ -249,7 +257,10 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
 def parse_args():
     """Configure checkpoint loading and decoding without retraining weights."""
     p = argparse.ArgumentParser(description="Chat with the joke GPT (no retrieval)")
-    p.add_argument("--model_dir", default="models/jokes")
+    p.add_argument("-l", "--language", choices=LANGUAGES, default="en",
+                   help="Chat language: en (default), fr or vi")
+    p.add_argument("--model_dir", default=None,
+                   help="Explicit checkpoint; otherwise use the selected language")
     p.add_argument("--device", default="auto", choices=("auto", "cpu", "cuda"))
     p.add_argument("--attempts", type=int, default=6)
     p.add_argument("--max_new_tokens", type=int, default=240)
@@ -266,15 +277,31 @@ def main():
     """Load the learned chatbot once, then answer interactive requests."""
     args = parse_args()
     device = choose_device(args.device)
-    model_dir = Path(args.model_dir)
+    model_dir = Path(args.model_dir) if args.model_dir else chat_model_dir(args.language)
+    if not (model_dir / "model.pt").is_file():
+        raise FileNotFoundError(
+            f"No trained weights at {model_dir / 'model.pt'} for {args.language}. "
+            "Train this language first, or provide a complete --model_dir."
+        )
+    # Previous English checkpoints did not store a language field. Treat them
+    # as English only; never decode French with English-only weights.
+    config_file = json.loads((model_dir / "config.json").read_text(encoding="utf-8"))
+    checkpoint_language = config_file.get("language",
+                                          config_file.get("training", {}).get("language", "en"))
+    if checkpoint_language != args.language:
+        raise ValueError(
+            f"Checkpoint language={checkpoint_language}, requested language={args.language}. "
+            "Train and load a separate model for each language."
+        )
     model, tokenizer, cfg, ids = load_model(model_dir, device)
     describe_loaded_model(model, tokenizer, cfg, ids, device, model_dir)
     log(f"Decoding: attempts={args.attempts}; max tokens={args.max_new_tokens}; "
         f"ID temperature={args.id_temperature:g}; body temperature={args.temperature:g}; "
         f"top-k={args.top_k}. Type exit to quit.")
     # ANSI escapes color only the speaker labels, not users' text or jokes.
-    you_label = "\033[96mYou:\033[0m"
-    bot_label = "\033[93mJoke bot:\033[0m"
+    user_text, bot_text = SPEAKER_LABELS[args.language]
+    you_label = f"\033[96m{user_text}\033[0m"
+    bot_label = f"\033[93m{bot_text}\033[0m"
     while True:
         try:
             query = input(f"\n{you_label} ").strip()
@@ -294,7 +321,10 @@ def main():
         )
         print(f"\n{bot_label} {answer}")
         if args.verbose:
-            intent = route_request(query, cfg["routing"]["topic_patterns"])
+            intent = route_request(
+                query, cfg["routing"]["topic_patterns"], args.language,
+                cfg["routing"].get("topic_labels", {}),
+            )
             log(f"Response: topic={intent.topic or 'general'}; status={status}; "
                 f"latency={time.perf_counter() - started:.2f}s")
 

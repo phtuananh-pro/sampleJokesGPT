@@ -29,6 +29,10 @@ import torch.nn.functional as F
 from .model import GPT, GPTConfig
 from .tokenizer import JokeTokenizer
 from .topics import topic_prompt
+from .i18n import (
+    LANGUAGES, GENERAL_PROMPTS, STYLE_PROMPTS,
+    data_path, topics_path, training_model_dir,
+)
 
 
 def log(message: str, *, step: int | None = None, total: int | None = None) -> None:
@@ -56,14 +60,6 @@ def model_summary(model: GPT, device: str) -> str:
         f"layers={cfg.n_layer}; heads={cfg.n_head}; embedding={cfg.n_embd}; "
         f"context={cfg.block_size}; vocabulary={cfg.vocab_size}; dropout={cfg.dropout}"
     )
-
-
-STYLE_PROMPTS = {
-    "dad_joke": "Tell me a dad joke.",
-    "pun": "Tell me a pun.",
-    "one_liner": "Tell me a one-liner.",
-    "wordplay": "Tell me a wordplay joke.",
-}
 
 
 def load_records(path: Path) -> list[dict]:
@@ -101,7 +97,9 @@ def joke_id(n: int) -> str:
     return f"<|j{n:04d}|>"
 
 
-def examples_for_record(record: dict, index: int, supported: set[str]):
+def examples_for_record(record: dict, index: int, supported: set[str],
+                        language: str = "en",
+                        topic_labels: dict[str, str] | None = None):
     """Pair the SAME full answer with generic, style, and topic prompts.
 
     If the same joke were present under unrelated answers, the model could
@@ -110,12 +108,12 @@ def examples_for_record(record: dict, index: int, supported: set[str]):
     """
     # Every joke is available for a generic request; optional labels create
     # extra conditionings for the *same* correct assistant response.
-    prompts = ["Tell me a joke."]
-    if record["style"] in STYLE_PROMPTS:
-        prompts.append(STYLE_PROMPTS[record["style"]])
+    prompts = [GENERAL_PROMPTS[language]]
+    if record["style"] in STYLE_PROMPTS[language]:
+        prompts.append(STYLE_PROMPTS[language][record["style"]])
     for topic in record["topics"]:
         if topic in supported:
-            prompts.append(topic_prompt(topic))
+            prompts.append(topic_prompt(topic, language, topic_labels))
     # The atomic joke ID helps the tiny Transformer memorize one coherent
     # answer; EOS teaches it to stop instead of running into another joke.
     suffix = joke_id(index) + record["joke"].strip() + "<|eos|>"
@@ -125,7 +123,9 @@ def examples_for_record(record: dict, index: int, supported: set[str]):
 
 
 def prepare_examples(records: list[dict], tokenizer: JokeTokenizer, block_size: int,
-                     supported: set[str]) -> tuple[list[tuple[torch.Tensor, torch.Tensor]], int]:
+                     supported: set[str], language: str = "en",
+                     topic_labels: dict[str, str] | None = None
+                     ) -> tuple[list[tuple[torch.Tensor, torch.Tensor]], int]:
     """Create fixed-length x/y tensors with loss only on assistant completion.
 
     Targets use -100 for padding and user prompt positions, which PyTorch's
@@ -135,7 +135,7 @@ def prepare_examples(records: list[dict], tokenizer: JokeTokenizer, block_size: 
     examples, skipped = [], 0
     pad_id = tokenizer.token_id("<|pad|>")
     for index, row in records:
-        for prefix, suffix in examples_for_record(row, index, supported):
+        for prefix, suffix in examples_for_record(row, index, supported, language, topic_labels):
             # Tokenize the whole sequence so the input context and output target
             # use the same subword segmentation and dedicated control tokens.
             full_ids = tokenizer.encode(prefix + suffix)
@@ -225,9 +225,14 @@ def choose_device(device: str) -> str:
 def parse_args():
     """Parse CLI options and fill hardware-dependent educational presets."""
     p = argparse.ArgumentParser(description="Train a topic-conditioned joke GPT from scratch")
-    p.add_argument("--data", default="data/jokes_clean.jsonl")
-    p.add_argument("--topics", default="data/topics.json")
-    p.add_argument("--out_dir", default="models/jokes")
+    p.add_argument("-l", "--language", choices=LANGUAGES, default="en",
+                   help="Training language: en (default), fr or vi")
+    p.add_argument("--data", default=None,
+                   help="Override the language-specific JSONL dataset")
+    p.add_argument("--topics", default=None,
+                   help="Override the language-specific topic taxonomy")
+    p.add_argument("--out_dir", default=None,
+                   help="Override the language-specific model directory")
     p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     p.add_argument("--max_iters", type=int, default=None)
     p.add_argument("--batch_size", type=int, default=None)
@@ -242,11 +247,16 @@ def parse_args():
     p.add_argument("--weight_decay", type=float, default=0.05)
     p.add_argument("--eval_interval", type=int, default=200)
     p.add_argument("--eval_iters", type=int, default=8)
-    p.add_argument("--min_topic_examples", type=int, default=10)
+    p.add_argument("--min_topic_examples", type=int, default=None,
+                   help="Minimum jokes per topic: EN=10; FR/VI pilot=3")
     p.add_argument("--val_fraction", type=float, default=0.05)
     p.add_argument("--seed", type=int, default=1337)
     p.add_argument("--overwrite", action="store_true")
     args = p.parse_args()
+    args.data = str(data_path(args.language)) if args.data is None else args.data
+    args.topics = str(topics_path(args.language)) if args.topics is None else args.topics
+    args.out_dir = (str(training_model_dir(args.language))
+                    if args.out_dir is None else args.out_dir)
     args.device = choose_device(args.device)
     # CPU defaults prioritize accessibility; CUDA defaults increase capacity
     # and updates to make the tiny training corpus easier to memorize.
@@ -258,6 +268,10 @@ def parse_args():
         args.batch_size = 24 if args.device == "cuda" else 8
     if args.max_iters is None:
         args.max_iters = 12000 if args.device == "cuda" else 3000
+    if args.min_topic_examples is None:
+        args.min_topic_examples = 10 if args.language == "en" else 3
+    if args.min_topic_examples < 1:
+        p.error("min_topic_examples must be at least 1")
     if args.id_loss_weight < 1:
         p.error("id_loss_weight must be at least 1")
     if args.n_embd % args.n_head:
@@ -274,8 +288,18 @@ def main():
     torch.manual_seed(args.seed)
     random.seed(args.seed)
     source = Path(args.data)
+    if not source.is_file():
+        raise FileNotFoundError(
+            f"Missing {args.language} joke dataset: {source}. "
+            "Each language requires a curated, culturally adapted JSONL corpus."
+        )
     records = load_records(source)
     topics_config = json.loads(Path(args.topics).read_text(encoding="utf-8"))
+    topic_labels = topics_config.get("topic_labels", {})
+    if args.language != "en":
+        missing = set(topics_config["topic_keyword_patterns"]) - set(topic_labels)
+        if missing:
+            raise ValueError(f"Missing translated topic labels: {sorted(missing)}")
     # Very sparse topics remain generic training data: there is too little
     # topical evidence to teach a dedicated conditional prompt reliably.
     counts = Counter(t for r in records for t in set(r["topics"]))
@@ -306,7 +330,8 @@ def main():
         shutil.rmtree(out)
     out.mkdir(parents=True)
 
-    log(f"Source: {len(records):,} curated jokes; supported topics={len(supported)}; "
+    log(f"Language={args.language}; source: {len(records):,} curated jokes; "
+        f"supported topics={len(supported)}; "
         f"train/validation records={len(train_rows)}/{len(validation_rows)}; "
         f"optimization steps={args.max_iters}", step=0, total=args.max_iters)
     # Train tokenizer on the prompts and jokes used by this run. Validation
@@ -314,7 +339,8 @@ def main():
     tokenizer_text = out / "tokenizer_corpus.tmp"
     with tokenizer_text.open("w", encoding="utf-8") as stream:
         for index, record in indexed:
-            for pre, answer in examples_for_record(record, index, supported):
+            for pre, answer in examples_for_record(
+                    record, index, supported, args.language, topic_labels):
                 stream.write(pre + answer + "\n")
     tokenizer = JokeTokenizer.train_from_file(
         tokenizer_text, vocab_size=args.bpe_vocab_size,
@@ -324,8 +350,10 @@ def main():
     tokenizer_text.unlink()
     # Turn *each* complete conversation into an independent fixed-length
     # tensor pair; the tokenizer never sees concatenated texts at inference.
-    train_samples, skipped_train = prepare_examples(train_rows, tokenizer, args.block_size, supported)
-    val_samples, skipped_val = prepare_examples(validation_rows, tokenizer, args.block_size, supported)
+    train_samples, skipped_train = prepare_examples(
+        train_rows, tokenizer, args.block_size, supported, args.language, topic_labels)
+    val_samples, skipped_val = prepare_examples(
+        validation_rows, tokenizer, args.block_size, supported, args.language, topic_labels)
     if not train_samples or not val_samples:
         raise ValueError("No usable training or validation examples; increase --block_size")
 
@@ -343,6 +371,7 @@ def main():
     # needs routing metadata, not a separate file of original joke texts.
     data_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     info = {
+        "language": args.language,
         "model": asdict(config),
         "training": vars(args),
         "dataset": {"source_sha256": data_hash, "records": len(records),
@@ -351,6 +380,8 @@ def main():
                     "skipped_too_long": skipped_train + skipped_val},
         "routing": {"topic_patterns": {t: topics_config["topic_keyword_patterns"][t]
                                        for t in sorted(supported)},
+                    "topic_labels": {t: topic_labels.get(t, t.replace("_", " and "))
+                                     for t in sorted(supported)},
                     "topic_counts": {t: counts[t] for t in sorted(supported)}},
         "train_joke_id_tokens": train_ids,
         "created_at": datetime.now().isoformat(timespec="seconds"),

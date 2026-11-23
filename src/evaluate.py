@@ -1,8 +1,8 @@
-"""Measure how often neural generation produces complete and on-topic jokes.
+"""Evaluate the trained JokeGPT in the selected language.
 
-This evaluates the *model's outputs*, not dataset retrieval. Complete means
-that generation reached EOS and passed lightweight format checks; on-topic
-means a lexical topic match. Neither metric measures funniness reliably.
+Only model predictions are evaluated. Lexical topic status and EOS stopping
+help diagnose decoding, but are not a substitute for judging whether a joke
+sounds natural and funny in French, Vietnamese, or English.
 """
 from __future__ import annotations
 
@@ -11,10 +11,12 @@ import json
 from pathlib import Path
 
 from .chat import choose_device, generate_best, load_model
+from .i18n import LANGUAGES, GENERAL_PROMPTS, STYLE_PROMPTS, chat_model_dir
+from .topics import topic_prompt
 
-# A small fixed request set makes comparisons between trained checkpoints
-# reproducible. It mixes general/style prompts with different subject areas.
-PROMPTS = [
+
+# Existing English benchmark requests remain unchanged for comparability.
+ENGLISH_PROMPTS = [
     "Tell me a joke.", "Tell me a pun.", "Tell me a dad joke.",
     "Tell me a joke about programmers.", "Joke about teachers.",
     "Tell me a joke about dogs.", "Tell me a joke about cats.",
@@ -28,36 +30,65 @@ PROMPTS = [
 ]
 
 
-def main():
-    """Generate fixed jokes and summarize lexical diagnostics.
+def prompts_for_language(language: str, cfg: dict) -> list[str]:
+    """Construct locale-correct prompts from the checkpoint's trained topics.
 
-    This evaluates the model's decoded answers, not humor or retrieval.
-    Manual review remains necessary for punchlines and topic relevance.
+    Unlike a hardcoded English test set, this avoids evaluating subjects that
+    the French/Vietnamese model never learned.
     """
-    p = argparse.ArgumentParser()
-    p.add_argument("--model_dir", default="models/jokes")
-    p.add_argument("--out", default="models/jokes/evaluation.json")
-    p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
+    if language == "en":
+        return ENGLISH_PROMPTS
+    prompts = [GENERAL_PROMPTS[language], *STYLE_PROMPTS[language].values()]
+    labels = cfg["routing"].get("topic_labels", {})
+    for topic in cfg["routing"]["topic_patterns"]:
+        prompts.append(topic_prompt(topic, language, labels))
+    return prompts[:20]
+
+
+def main() -> None:
+    """Run deterministic diagnostic requests and save human-readable answers."""
+    p = argparse.ArgumentParser(description="Evaluate JokeGPT model generations")
+    p.add_argument("-l", "--language", default="en", choices=LANGUAGES)
+    p.add_argument("--model_dir", default=None)
+    p.add_argument("--out", default=None)
+    p.add_argument("--device", default="auto", choices=("auto", "cpu", "cuda"))
     p.add_argument("--attempts", type=int, default=10)
     args = p.parse_args()
+
+    model_dir = Path(args.model_dir) if args.model_dir else chat_model_dir(args.language)
+    cfg_path = model_dir / "config.json"
+    cfg_meta = json.loads(cfg_path.read_text(encoding="utf-8"))
+    checkpoint_lang = cfg_meta.get(
+        "language", cfg_meta.get("training", {}).get("language", "en"))
+    if checkpoint_lang != args.language:
+        raise ValueError(
+            f"Checkpoint language={checkpoint_lang}, requested={args.language}"
+        )
+
     device = choose_device(args.device)
-    model, tokenizer, cfg, ids = load_model(Path(args.model_dir), device)
-    # These are exactly the same routing and decoding paths as interactive chat.
+    model, tokenizer, cfg, ids = load_model(model_dir, device)
     results = []
-    for prompt in PROMPTS:
-        answer, status = generate_best(model, tokenizer, cfg, ids, device,
-                                       prompt, args.attempts, 240, 0.75, 0.0, 20)
+    for prompt in prompts_for_language(args.language, cfg):
+        answer, status = generate_best(
+            model, tokenizer, cfg, ids, device, prompt, args.attempts,
+            240, 0.75, 0.0, 20,
+        )
         results.append({"prompt": prompt, "status": status, "answer": answer})
         print(f"{status:10} {prompt}\n  {answer}\n", flush=True)
-    # Count explicit fallback/incomplete outcomes; do not mask errors.
-    counts = {kind: sum(r["status"] == kind for r in results)
-              for kind in ("general", "topic", "fallback", "incomplete")}
-    payload = {"count": len(results), "status_counts": counts, "results": results,
-               "limits": "EOS and lexical topicality proxies are not a human joke-quality review."}
-    # Preserve the full answers for later human quality inspection.
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print("Metrics:", counts)
+
+    counts = {
+        key: sum(r["status"] == key for r in results)
+        for key in ("general", "topic", "fallback", "incomplete")
+    }
+    payload = {
+        "language": args.language, "count": len(results),
+        "status_counts": counts, "results": results,
+        "limits": "EOS and lexical topicality are not human humor-quality assessments.",
+    }
+    destination = Path(args.out) if args.out else model_dir / "evaluation.json"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(f"Metrics ({args.language}): {counts}; saved {destination}")
 
 
 if __name__ == "__main__":

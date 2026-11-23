@@ -4,6 +4,10 @@ jokes_model_sample/
 *.pt
 *.pth
 
+# Explicitly publish demonstration checkpoints when their weights are added.
+# Training output under models/ stays ignored.
+!runnable_models/**/model.pt
+
 # Python caches and virtual environments
 __pycache__/
 *.py[cod]
