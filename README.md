@@ -63,6 +63,35 @@ python -m pip install -r requirements.txt
 
 `--device auto` uses a supported NVIDIA CUDA GPU when available and otherwise uses CPU. CUDA requires a compatible driver; a separate CUDA Toolkit installation is not normally required by the PyTorch wheel.
 
+## Chat on already trained models
+**Windows PowerShell**
+```powershell
+python -m src.chat --device auto --model_dir runnable_models/jokes_en
+```
+
+**macOS / Linux**
+```powershell
+python -m src.chat --device auto --model_dir runnable_models\jokes_en
+```
+
+Illustrative examples (actual answers vary):
+
+```text
+You: tell me a joke
+Joke bot: What's a hawk's favorite subject? Fawk-abulary!
+
+You: jokes on teacher
+Joke bot: Why did the music teacher go to the police? Because of the treble!
+
+You: joke on programming
+Joke bot: Why are spiders so good at computer programming? Because they are great at web design.
+
+You: joke on food
+Joke bot: What do you call a confused mushroom? A mixed-up fungi!
+```
+
+Type `exit`, `quit`, or `q` to finish.
+
 ## Dataset
 
 `data/jokes_clean.jsonl` contains **1,440 pre-curated jokes** derived from [Humor ShareGPT 5K](https://huggingface.co/datasets/briancconnelly/humor-sharegpt-5k) (upstream dataset published under MIT terms).
@@ -81,9 +110,14 @@ Each JSONL record contains:
 The dataset is already deduplicated and automatically screened. **It has not received exhaustive human review; topic labels and safety screening may be imperfect.** There is **no cleaning script to run**.
 
 ## Train
-
+**Windows PowerShell**
 ```powershell
-python -m src.train --device auto
+python -m src.train --device auto --out_dir models/jokes_demo
+```
+
+**macOS / Linux**
+```powershell
+python -m src.train --device auto --out_dir models\jokes_demo
 ```
 
 The script trains the BPE tokenizer, constructs individual joke conversations, trains the Transformer, and saves the best checkpoint. It asks before replacing an existing output folder. Use `--overwrite` to replace it without prompting.
@@ -121,8 +155,14 @@ Use the training console's elapsed-time and ETA measurements for your own machin
 
 ## Chat
 
+**Windows PowerShell**
 ```powershell
-python -m src.chat --device auto
+python -m src.chat --device auto --model_dir models/jokes_demo
+```
+
+**macOS / Linux**
+```powershell
+python -m src.train --device auto --model_dir models\jokes_demo
 ```
 
 Illustrative examples (actual answers vary):
