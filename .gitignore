@@ -1,33 +1,24 @@
-# Training data
-# data/
-
-# Model outputs
-# models/
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-
-# Virtual env
-.venv/
-venv/
-env/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# PyTorch checkpoints
+# Generated training runs and checkpoints (never commit model artifacts)
+models/
+jokes_model_sample/
 *.pt
 *.pth
 
-# Jupyter
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local logs and notebook checkpoints
+*.log
 .ipynb_checkpoints/

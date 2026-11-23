@@ -67,8 +67,13 @@ STYLE_PROMPTS = {
 
 
 def load_records(path: Path) -> list[dict]:
-    """Read pre-curated JSONL, validating its four teaching-data fields."""
+    """Load pre-curated JSONL without rebuilding or re-cleaning the dataset.
+
+    One JSON object represents one source joke, with style/topic metadata.
+    Reject malformed records early so training errors are reproducible.
+    """
     records = []
+    # JSONL permits streaming records without parsing one huge JSON array.
     for line_num, line in enumerate(path.open(encoding="utf-8"), 1):
         if not line.strip():
             continue
@@ -103,13 +108,18 @@ def examples_for_record(record: dict, index: int, supported: set[str]):
     blend its punchlines. Keeping one identity across prompts helps it learn a
     stable continuation from the identifier it predicts first.
     """
+    # Every joke is available for a generic request; optional labels create
+    # extra conditionings for the *same* correct assistant response.
     prompts = ["Tell me a joke."]
     if record["style"] in STYLE_PROMPTS:
         prompts.append(STYLE_PROMPTS[record["style"]])
     for topic in record["topics"]:
         if topic in supported:
             prompts.append(topic_prompt(topic))
+    # The atomic joke ID helps the tiny Transformer memorize one coherent
+    # answer; EOS teaches it to stop instead of running into another joke.
     suffix = joke_id(index) + record["joke"].strip() + "<|eos|>"
+    # dict.fromkeys preserves insertion order while eliminating prompt duplicates.
     for prompt in dict.fromkeys(prompts):
         yield canonical_prefix(prompt), suffix
 
@@ -126,15 +136,24 @@ def prepare_examples(records: list[dict], tokenizer: JokeTokenizer, block_size: 
     pad_id = tokenizer.token_id("<|pad|>")
     for index, row in records:
         for prefix, suffix in examples_for_record(row, index, supported):
+            # Tokenize the whole sequence so the input context and output target
+            # use the same subword segmentation and dedicated control tokens.
             full_ids = tokenizer.encode(prefix + suffix)
             prefix_count = len(tokenizer.encode(prefix))
+            # We need <= block_size+1 tokens to form a shifted x/y pair.
+            # Skipping preserves the full punchline (no silent truncation).
             if len(full_ids) > block_size + 1:
                 skipped += 1
                 continue
+            # A GPT predicts token t+1 from positions <= t (causal masking).
             x_ids = full_ids[:-1]
             y_ids = full_ids[1:]
+            # Mask user/prompt targets; the first *scored* target is joke ID.
+            # ignore_index=-100 tells PyTorch not to train on those positions.
             for k in range(max(0, prefix_count - 1)):
                 y_ids[k] = -100
+            # Equal-length tensors make batching simple; padded predictions
+            # are not part of the loss and do not teach the model fake jokes.
             n_pad = block_size - len(x_ids)
             x_ids.extend([pad_id] * n_pad)
             y_ids.extend([-100] * n_pad)
@@ -146,6 +165,8 @@ def prepare_examples(records: list[dict], tokenizer: JokeTokenizer, block_size: 
 
 def batch_from_examples(samples, batch_size: int, device: str):
     """Sample complete joke conversations; never cross sample boundaries."""
+    # Sampling with replacement creates a random minibatch without ever
+    # stitching together two unrelated joke conversations.
     indices = torch.randint(0, len(samples), (batch_size,)).tolist()
     x = torch.stack([samples[i][0] for i in indices]).to(device)
     y = torch.stack([samples[i][1] for i in indices]).to(device)
@@ -160,11 +181,15 @@ def completion_loss(model: GPT, x: torch.Tensor, y: torch.Tensor,
     helps the model learn the topic-to-identity association instead of
     spending nearly all gradient signal on common joke-body words.
     """
+    # Flatten [batch, sequence, vocab] logits for per-token cross-entropy.
+    # The logits remain differentiable; only ignored targets are excluded.
     logits, _ = model(x)
     per_token = F.cross_entropy(
         logits.reshape(-1, logits.shape[-1]), y.reshape(-1),
         ignore_index=-100, reduction="none",
     ).view_as(y)
+    # Find the first valid target *per row*: the learned joke-ID token.
+    # Its extra weight trains prompt -> joke selection as well as wording.
     valid = y != -100
     first_completion = valid & (valid.long().cumsum(dim=1) == 1)
     weights = valid.float() + (id_loss_weight - 1.0) * first_completion.float()
@@ -174,6 +199,11 @@ def completion_loss(model: GPT, x: torch.Tensor, y: torch.Tensor,
 
 @torch.no_grad()
 def estimate_loss(model: GPT, samples, steps: int, batch_size: int, device: str, id_loss_weight: float):
+    """Estimate masked completion loss with dropout disabled and no gradients.
+
+    These batches are sampled from a fixed train or validation record split.
+    Loss is diagnostic; it is not a direct measure of whether jokes are funny.
+    """
     model.eval()
     numbers = []
     for _ in range(steps):
@@ -184,6 +214,7 @@ def estimate_loss(model: GPT, samples, steps: int, batch_size: int, device: str,
 
 
 def choose_device(device: str) -> str:
+    """Prefer NVIDIA CUDA when available; raise on an unavailable explicit GPU."""
     if device == "auto":
         return "cuda" if torch.cuda.is_available() else "cpu"
     if device == "cuda" and not torch.cuda.is_available():
@@ -192,10 +223,11 @@ def choose_device(device: str) -> str:
 
 
 def parse_args():
+    """Parse CLI options and fill hardware-dependent educational presets."""
     p = argparse.ArgumentParser(description="Train a topic-conditioned joke GPT from scratch")
     p.add_argument("--data", default="data/jokes_clean.jsonl")
     p.add_argument("--topics", default="data/topics.json")
-    p.add_argument("--out_dir", default="models/jokes_v2")
+    p.add_argument("--out_dir", default="models/jokes")
     p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     p.add_argument("--max_iters", type=int, default=None)
     p.add_argument("--batch_size", type=int, default=None)
@@ -216,6 +248,8 @@ def parse_args():
     p.add_argument("--overwrite", action="store_true")
     args = p.parse_args()
     args.device = choose_device(args.device)
+    # CPU defaults prioritize accessibility; CUDA defaults increase capacity
+    # and updates to make the tiny training corpus easier to memorize.
     if args.n_layer is None:
         args.n_layer = 5 if args.device == "cuda" else 3
     if args.n_embd is None:
@@ -234,24 +268,32 @@ def parse_args():
 
 
 def main():
+    """Prepare bounded conversations, optimize GPT, and save a reproducible checkpoint."""
     args = parse_args()
+    # Seed both libraries: PyTorch samples batches/weights, Python splits records.
     torch.manual_seed(args.seed)
     random.seed(args.seed)
     source = Path(args.data)
     records = load_records(source)
     topics_config = json.loads(Path(args.topics).read_text(encoding="utf-8"))
+    # Very sparse topics remain generic training data: there is too little
+    # topical evidence to teach a dedicated conditional prompt reliably.
     counts = Counter(t for r in records for t in set(r["topics"]))
     supported = {name for name, cnt in counts.items()
                  if cnt >= args.min_topic_examples
                  and name in topics_config["topic_keyword_patterns"]}
+    # Split original jokes *before* expanding prompt variants. Otherwise one
+    # answer could leak into validation under another request phrasing.
     rng = random.Random(args.seed)
     indexed = list(enumerate(records))
     rng.shuffle(indexed)
     cut = max(1, int(len(indexed) * args.val_fraction))
     validation_rows, train_rows = indexed[:cut], indexed[cut:]
+    # Keep original stable record indices as joke IDs across prompt variants.
     train_ids = [joke_id(idx) for idx, _ in train_rows]
     val_ids = [joke_id(idx) for idx, _ in validation_rows]
 
+    # Protect previously trained weights from accidental overwrite.
     out = Path(args.out_dir)
     if out.exists():
         if not args.overwrite:
@@ -280,11 +322,15 @@ def main():
     )
     tokenizer.save(out / "tokenizer.json")
     tokenizer_text.unlink()
+    # Turn *each* complete conversation into an independent fixed-length
+    # tensor pair; the tokenizer never sees concatenated texts at inference.
     train_samples, skipped_train = prepare_examples(train_rows, tokenizer, args.block_size, supported)
     val_samples, skipped_val = prepare_examples(validation_rows, tokenizer, args.block_size, supported)
     if not train_samples or not val_samples:
         raise ValueError("No usable training or validation examples; increase --block_size")
 
+    # Build Part IV decoder-only Transformer after learning the actual BPE
+    # vocabulary size (which includes one special token per source joke).
     config = GPTConfig(
         vocab_size=tokenizer.vocab_size, block_size=args.block_size,
         n_layer=args.n_layer, n_head=args.n_head,
@@ -293,6 +339,8 @@ def main():
     model = GPT(config).to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate,
                                   weight_decay=args.weight_decay)
+    # Save provenance and topic-routing rules *with* weights. The chatbot
+    # needs routing metadata, not a separate file of original joke texts.
     data_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     info = {
         "model": asdict(config),
@@ -318,6 +366,8 @@ def main():
     log("Training a generative model; inference never loads joke records.",
         step=0, total=args.max_iters)
     started = time.perf_counter()
+    # One optimization update = forward pass -> masked loss -> backward ->
+    # AdamW step. Evaluation at step 0 gives an untrained reference value.
     for step in range(args.max_iters + 1):
         if step % args.eval_interval == 0 or step == args.max_iters:
             train_loss = estimate_loss(model, train_samples, args.eval_iters, args.batch_size, args.device, args.id_loss_weight)
@@ -329,6 +379,9 @@ def main():
                 f"elapsed={format_duration(elapsed)}; "
                 f"speed={speed:.2f} steps/s; ETA={format_duration(eta)}",
                 step=step, total=args.max_iters)
+            # Unlike a general-purpose language model, this demo prefers
+            # recalling complete learned jokes: choose the lowest TRAIN loss.
+            # We still report held-out validation loss to expose overfitting.
             if train_loss < best_train:
                 best_train = train_loss
                 torch.save(model.state_dict(), out / "model.pt")
@@ -341,6 +394,8 @@ def main():
         x, y = batch_from_examples(train_samples, args.batch_size, args.device)
         optimizer.zero_grad(set_to_none=True)
         loss = completion_loss(model, x, y, args.id_loss_weight)
+        # Autograd computes gradients through all attention/MLP blocks;
+        # gradient clipping prevents a rare large update from destabilizing.
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()

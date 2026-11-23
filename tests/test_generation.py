@@ -11,7 +11,11 @@ from src.model import GPT
 
 
 class ForcedEosModel:
-    """Tiny fake model whose next-token distribution always selects EOS."""
+    """Deterministic fake logits isolate the decoding loop from trained weights.
+
+    Generating an actual funny joke needs trained weights; the test verifies
+    the neural decoder obeys the learned EOS token and the hard length cap.
+    """
 
     def __init__(self, eos_id: int):
         self.config = type("Config", (), {"block_size": 16})()
@@ -26,7 +30,10 @@ class ForcedEosModel:
 
 
 class GenerationTests(unittest.TestCase):
+    """Check structural decoding behavior without expensive model training."""
+
     def test_eos_ends_generation(self):
+        """EOS immediately terminates rather than consuming all token budget."""
         model = ForcedEosModel(eos_id=5)
         result = GPT.generate(
             model, torch.tensor([[2, 3]]),
@@ -36,6 +43,7 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(model.calls, 1)
 
     def test_max_new_tokens_remains_safety_limit(self):
+        """A maximum length prevents unbounded loops when EOS is absent."""
         model = ForcedEosModel(eos_id=5)
         result = GPT.generate(
             model, torch.tensor([[2, 3]]),

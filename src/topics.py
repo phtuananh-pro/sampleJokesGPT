@@ -13,18 +13,22 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class JokeRequest:
     """A canonical training prompt plus the detected domain, if supported."""
-    prompt: str
-    topic: str | None
-    keyword: str | None
+    prompt: str       # canonical user prefix used during model training
+    topic: str | None  # supported subject name, if detected
+    keyword: str | None  # matched request word for weak output validation
 
 
 def topic_prompt(topic: str) -> str:
     """Build exactly the same prompt in training and interactive inference."""
+    # Consistent wording matters: conditional generation uses the same
+    # context tokens as the corresponding training examples.
     return f"Tell me a joke about {topic.replace('_', ' and ')}."
 
 
 def topic_matches(text: str, pattern: str) -> bool:
     """Check a label's lexical pattern against text with word boundaries."""
+    # Boundaries keep 'cat' from matching inside 'education'. Taxonomy
+    # patterns are data/configuration, not a searchable joke corpus.
     return re.search(r"\b(?:" + pattern + r")\b", text, re.IGNORECASE) is not None
 
 
@@ -39,11 +43,14 @@ def route_request(text: str, topic_patterns: dict[str, str]) -> JokeRequest:
     # Content after "about" or "on" is usually more informative than "joke".
     match = re.search(r"\b(?:about|on)\s+(.+)", lower)
     focus = match.group(1) if match else lower
+    # When several subjects match, prefer a longer phrase and an earlier
+    # occurrence. This transparent heuristic is intentionally imperfect.
     candidates = []
     for topic, pattern in topic_patterns.items():
         found = re.search(r"\b(?:" + pattern + r")\b", focus, re.IGNORECASE)
         if found:
             candidates.append((len(found.group()), -found.start(), topic))
+    # If no topic occurs after 'about'/'on', try the entire user sentence.
     if not candidates and focus != lower:
         for topic, pattern in topic_patterns.items():
             found = re.search(r"\b(?:" + pattern + r")\b", lower, re.IGNORECASE)
@@ -56,6 +63,8 @@ def route_request(text: str, topic_patterns: dict[str, str]) -> JokeRequest:
         matched = re.search(r"\b(?:" + topic_patterns[topic] + r")\b", focus, re.IGNORECASE)
         keyword = matched.group().lower() if matched else None
         return JokeRequest(topic_prompt(topic), topic, keyword)
+    # Humor style is separate from subject matter. Generic questions route
+    # to the broadest prompt that all jokes have seen during training.
     if re.search(r"\b(?:pun|puns|punny)\b", lower):
         return JokeRequest("Tell me a pun.", None, None)
     if re.search(r"\b(?:dad joke|dad jokes|groaner)\b", lower):

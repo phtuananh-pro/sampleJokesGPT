@@ -12,6 +12,8 @@ from pathlib import Path
 
 from .chat import choose_device, generate_best, load_model
 
+# A small fixed request set makes comparisons between trained checkpoints
+# reproducible. It mixes general/style prompts with different subject areas.
 PROMPTS = [
     "Tell me a joke.", "Tell me a pun.", "Tell me a dad joke.",
     "Tell me a joke about programmers.", "Joke about teachers.",
@@ -27,24 +29,33 @@ PROMPTS = [
 
 
 def main():
+    """Generate fixed jokes and summarize lexical diagnostics.
+
+    This evaluates the model's decoded answers, not humor or retrieval.
+    Manual review remains necessary for punchlines and topic relevance.
+    """
     p = argparse.ArgumentParser()
-    p.add_argument("--model_dir", default="models/jokes_v2")
-    p.add_argument("--out", default="models/jokes_v2/evaluation.json")
+    p.add_argument("--model_dir", default="models/jokes")
+    p.add_argument("--out", default="models/jokes/evaluation.json")
     p.add_argument("--device", choices=("auto", "cpu", "cuda"), default="auto")
     p.add_argument("--attempts", type=int, default=10)
     args = p.parse_args()
     device = choose_device(args.device)
     model, tokenizer, cfg, ids = load_model(Path(args.model_dir), device)
+    # These are exactly the same routing and decoding paths as interactive chat.
     results = []
     for prompt in PROMPTS:
         answer, status = generate_best(model, tokenizer, cfg, ids, device,
                                        prompt, args.attempts, 240, 0.75, 0.0, 20)
         results.append({"prompt": prompt, "status": status, "answer": answer})
         print(f"{status:10} {prompt}\n  {answer}\n", flush=True)
+    # Count explicit fallback/incomplete outcomes; do not mask errors.
     counts = {kind: sum(r["status"] == kind for r in results)
               for kind in ("general", "topic", "fallback", "incomplete")}
     payload = {"count": len(results), "status_counts": counts, "results": results,
                "limits": "EOS and lexical topicality proxies are not a human joke-quality review."}
+    # Preserve the full answers for later human quality inspection.
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print("Metrics:", counts)
 

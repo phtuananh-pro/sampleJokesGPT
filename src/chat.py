@@ -49,6 +49,10 @@ def describe_loaded_model(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
 
 @dataclass
 class Candidate:
+    """One generated answer and its inexpensive completion/topic diagnostics.
+
+    These flags rank *model-generated* text; they do not retrieve source jokes.
+    """
     text: str
     finished: bool
     topic_match: bool
@@ -56,6 +60,7 @@ class Candidate:
 
 
 def choose_device(requested: str) -> torch.device:
+    """Select CPU/CUDA without silently ignoring an explicit CUDA request."""
     if requested == "auto":
         requested = "cuda" if torch.cuda.is_available() else "cpu"
     if requested == "cuda" and not torch.cuda.is_available():
@@ -65,11 +70,17 @@ def choose_device(requested: str) -> torch.device:
 
 def load_model(path: Path, device: torch.device):
     """Load only weights, BPE vocabulary, and routing metadata (no jokes)."""
+    # The checkpoint carries architecture and topic rules. The training
+    # dataset is deliberately neither opened nor searched at inference.
     cfg = json.loads((path / "config.json").read_text(encoding="utf-8"))
     tokenizer = JokeTokenizer.load(path / "tokenizer.json")
     model = GPT(GPTConfig(**cfg["model"])).to(device)
+    # Deserialize tensor weights only; recreate the exact saved architecture
+    # before loading and switch off dropout for reproducible decoding.
     model.load_state_dict(torch.load(path / "model.pt", map_location=device, weights_only=True))
     model.eval()
+    # Only IDs seen during training can be sampled. This list contains token
+    # IDs, NOT a map from IDs to stored text or another retrieval index.
     ids = [tokenizer.token_id(token) for token in cfg["train_joke_id_tokens"]]
     if not ids:
         raise ValueError("Checkpoint contains no learned joke identities")
@@ -79,15 +90,21 @@ def load_model(path: Path, device: torch.device):
 @torch.no_grad()
 def next_token_logits(model: GPT, history: torch.Tensor) -> torch.Tensor:
     """Predict the next-token distribution from a causal context window."""
+    # The causal model sees at most the learned positional context window;
+    # the last position predicts exactly one next-token distribution.
     logits, _ = model(history[:, -model.config.block_size:])
     return logits[0, -1, :]
 
 
 def sample_from_logits(logits: torch.Tensor, temperature: float, top_k: int) -> int:
     """Sample one token or use greedy decoding when temperature is zero."""
+    # Temperature=0 deterministically chooses the most probable token.
+    # Positive temperature allows controlled stochastic generation.
     if temperature <= 0:
         return int(torch.argmax(logits).item())
     logits = logits / temperature
+    # Restrict candidates to the top-k tokens before softmax, reducing
+    # low-probability completions that can corrupt a tiny model's punchline.
     if 0 < top_k < logits.numel():
         cutoff = torch.topk(logits, top_k).values[-1]
         logits = logits.masked_fill(logits < cutoff, -float("inf"))
@@ -105,17 +122,27 @@ def generate_candidate(model: GPT, tokenizer: JokeTokenizer, prompt: str,
     vocabulary constraint, not retrieval: neither a joke file nor a table of
     joke texts is loaded. The rest of the answer is produced by the Transformer.
     """
+    # Use the *same* serialized prompt grammar seen during training.
+    # A mismatched prefix would shift the model out of its learned context.
     prefix = f"<|bos|><|user|>{prompt}<|assistant|>"
     history = torch.tensor([tokenizer.encode(prefix)], dtype=torch.long, device=device)
+    # The first assistant position must be a *learned joke ID*. Constraining
+    # vocabulary logits is decoding, not lookup: no joke text is consulted.
     choices = next_token_logits(model, history)[allowed_joke_ids]
     choice = sample_from_logits(choices, id_temperature, min(top_k, len(allowed_joke_ids)))
     identity_id = allowed_joke_ids[choice]
     history = torch.cat((history, torch.tensor([[identity_id]], device=device)), dim=1)
 
+    # EOS is trained as the true boundary of a full joke. A separate token
+    # cap exists only to stop pathological or overly long generations.
     eos_id = tokenizer.token_id("<|eos|>")
+    # A joke body must not emit another chat role, padding, or joke identity.
+    # Such control tokens signal a malformed continuation; reject it.
     invalid_tokens = {tokenizer.token_id(tok) for tok in
                       ("<|bos|>", "<|user|>", "<|assistant|>", "<|pad|>", "<|unk|>")}
     invalid_tokens.update(allowed_joke_ids)
+    # Generate autoregressively: each sampled body token becomes part of the
+    # next causal context, until EOS or a visible failure condition occurs.
     generated = []
     for _ in range(max_new_tokens):
         logits = next_token_logits(model, history)
@@ -133,6 +160,8 @@ def is_complete_joke(text: str, finished: bool) -> bool:
     """Reject truncated, repetitive, suspiciously short and broken answers."""
     if not finished or not (20 <= len(text) <= 450) or "<|" in text:
         return False
+    # EOS is necessary, but it cannot prove a joke is grammatical or funny.
+    # Heuristics reject obvious truncation, short fragments and loops.
     words = re.findall(r"\b\w+\b", text.lower())
     if len(words) < 5:
         return False
@@ -143,14 +172,18 @@ def is_complete_joke(text: str, finished: bool) -> bool:
 
 
 def keyword_matches(text: str, keyword: str | None) -> bool:
+    """Look for a request keyword in generated text; weak topical evidence."""
     if keyword is None:
         return False
+    # Very basic singular/plural handling; not a semantic classifier.
     stem = keyword.lower().rstrip("s") if len(keyword) > 4 else keyword.lower()
     return re.search(r"\b" + re.escape(stem) + r"\w*\b", text, re.IGNORECASE) is not None
 
 
 def quality_score(candidate: Candidate, requested: JokeRequest) -> float:
     """Favor literal keyword evidence, then topical evidence and readability."""
+    # These small readability/keyword preferences are ranking heuristics,
+    # not learned reward scores and not a replacement for human review.
     score = 0.0
     if requested.topic:
         score += 10 if candidate.keyword_match else 0
@@ -169,9 +202,12 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
                   attempts: int, max_new_tokens: int, id_temperature: float,
                   body_temperature: float, top_k: int) -> tuple[str, str]:
     """Try multiple neural generations; prefer complete on-topic answers."""
+    # Read ONLY the saved taxonomy from config, never the JSONL dataset.
     topic_patterns = cfg["routing"]["topic_patterns"]
     intent = route_request(request, topic_patterns)
     candidates: list[Candidate] = []
+    # Try a few independent neural completions. This helps with occasional
+    # malformed output without altering the model or adding retrieval.
     for attempt in range(attempts):
         # A little randomness in later attempts can repair rigid, broken loops.
         temp = body_temperature if attempt < attempts // 2 else max(body_temperature, 0.25)
@@ -179,6 +215,7 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
             model, tokenizer, intent.prompt, joke_ids, device,
             id_temperature, temp, max_new_tokens, top_k,
         )
+        # The assistant should display complete jokes, not arbitrary prefixes.
         if not is_complete_joke(text, finished):
             continue
         item = Candidate(
@@ -189,6 +226,8 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
         candidates.append(item)
         # Returning a valid joke immediately avoids many expensive decoder
         # steps, especially on CPU (the educational model has no KV cache).
+        # Stop early for an acceptable completion to keep CPU inference usable.
+        # Topic requests require stronger evidence when it is available.
         if not intent.topic:
             return item.text, "general"
         if item.keyword_match and item.topic_match:
@@ -208,8 +247,9 @@ def generate_best(model: GPT, tokenizer: JokeTokenizer, cfg: dict,
 
 
 def parse_args():
+    """Configure checkpoint loading and decoding without retraining weights."""
     p = argparse.ArgumentParser(description="Chat with the joke GPT (no retrieval)")
-    p.add_argument("--model_dir", default="models/jokes_v2")
+    p.add_argument("--model_dir", default="models/jokes")
     p.add_argument("--device", default="auto", choices=("auto", "cpu", "cuda"))
     p.add_argument("--attempts", type=int, default=6)
     p.add_argument("--max_new_tokens", type=int, default=240)
@@ -223,6 +263,7 @@ def parse_args():
 
 
 def main():
+    """Load the learned chatbot once, then answer interactive requests."""
     args = parse_args()
     device = choose_device(args.device)
     model_dir = Path(args.model_dir)
@@ -231,6 +272,7 @@ def main():
     log(f"Decoding: attempts={args.attempts}; max tokens={args.max_new_tokens}; "
         f"ID temperature={args.id_temperature:g}; body temperature={args.temperature:g}; "
         f"top-k={args.top_k}. Type exit to quit.")
+    # ANSI escapes color only the speaker labels, not users' text or jokes.
     you_label = "\033[96mYou:\033[0m"
     bot_label = "\033[93mJoke bot:\033[0m"
     while True:
@@ -243,6 +285,8 @@ def main():
             break
         if not query:
             continue
+        # A request is routed to a training-compatible prompt; the model
+        # returns body tokens. Verbose latency stays outside the joke text.
         started = time.perf_counter()
         answer, status = generate_best(
             model, tokenizer, cfg, ids, device, query, args.attempts,

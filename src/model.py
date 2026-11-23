@@ -21,12 +21,12 @@ class GPTConfig:
     the same architecture before loading its learned parameters.
     """
 
-    vocab_size: int
-    block_size: int = 128
-    n_layer: int = 6
-    n_head: int = 6
-    n_embd: int = 384
-    dropout: float = 0.2
+    vocab_size: int           # BPE and learned joke-ID vocabulary size
+    block_size: int = 128     # maximum causal sequence length
+    n_layer: int = 6          # number of stacked Transformer blocks
+    n_head: int = 6           # parallel causal-attention heads per block
+    n_embd: int = 384         # width of token and residual representations
+    dropout: float = 0.2      # regularization active during training
 
 
 class CausalSelfAttention(nn.Module):
@@ -45,6 +45,7 @@ class CausalSelfAttention(nn.Module):
             raise ValueError("n_embd must be divisible by a positive n_head.")
 
         self.n_head = config.n_head
+        # Split the model representation evenly among attention heads.
         self.head_dim = config.n_embd // config.n_head
 
         self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd)
@@ -53,6 +54,8 @@ class CausalSelfAttention(nn.Module):
         self.attn_dropout = nn.Dropout(config.dropout)
         self.resid_dropout = nn.Dropout(config.dropout)
 
+        # Lower-triangular mask prevents position t from seeing future tokens.
+        # Causality lets us compute training positions in parallel.
         mask = torch.tril(torch.ones(config.block_size, config.block_size))
         self.register_buffer(
             "mask",
@@ -63,21 +66,30 @@ class CausalSelfAttention(nn.Module):
         """Apply multi-head causal attention to ``[batch, time, width]``."""
         B, T, C = x.shape
 
+        # One projection computes queries/keys/values, each of width C.
+        # QK^T scores decide where each position should attend; V carries data.
         qkv = self.c_attn(x)
         q, k, v = qkv.split(C, dim=2)
 
+        # [B,T,C] -> [B,heads,T,head_dim] allows parallel attention heads.
         q = q.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
         k = k.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
         v = v.view(B, T, self.n_head, self.head_dim).transpose(1, 2)
 
+        # Scores are scaled by sqrt(head_dim) to avoid excessively sharp
+        # softmax distributions in wider attention heads.
         att = q @ k.transpose(-2, -1)
         att = att / (self.head_dim ** 0.5)
 
+        # Invalid future positions become -inf so softmax assigns them 0.
         att = att.masked_fill(self.mask[:, :, :T, :T] == 0, float("-inf"))
         att = F.softmax(att, dim=-1)
         att = self.attn_dropout(att)
 
+        # Mix past/current value vectors according to learned attention.
         y = att @ v
+        # Concatenate heads back to model width, then project to the
+        # residual stream expected by the next Transformer layer.
         y = y.transpose(1, 2).contiguous().view(B, T, C)
 
         y = self.c_proj(y)
@@ -97,6 +109,8 @@ class MLP(nn.Module):
         """Build the expansion, GELU, projection, and dropout layers."""
         super().__init__()
 
+        # Transformer FFN: expand width by 4, apply GELU, project back.
+        # It operates independently at each sequence position.
         self.net = nn.Sequential(
             nn.Linear(config.n_embd, 4 * config.n_embd),
             nn.GELU(),
@@ -124,6 +138,7 @@ class Block(nn.Module):
 
     def forward(self, x):
         """Add attention and MLP updates through residual connections."""
+        # Pre-LayerNorm and residual connections stabilize deep optimization.
         x = x + self.attn(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
         return x
@@ -138,11 +153,15 @@ class GPT(nn.Module):
 
         self.config = config
 
+        # Token embeddings encode identities/words; position embeddings tell
+        # attention which earlier token occurred where in the sequence.
         self.token_embedding = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding = nn.Embedding(config.block_size, config.n_embd)
 
         self.dropout = nn.Dropout(config.dropout)
 
+        # Stacking blocks lets the network build increasingly contextual
+        # representations while preserving a strict causal mask.
         self.blocks = nn.ModuleList(
             [Block(config) for _ in range(config.n_layer)]
         )
@@ -191,10 +210,14 @@ class GPT(nn.Module):
             x = block(x)
 
         x = self.ln_f(x)
+        # At each position, output one logit for every possible next token.
+        # During chat only the last position is sampled autoregressively.
         logits = self.lm_head(x)
 
         loss = None
 
+        # Generic unmasked loss illustrates normal GPT training. JokeGPT's
+        # src/train.py uses its own prompt-masked completion_loss instead.
         if targets is not None:
             loss = F.cross_entropy(
                 logits.view(-1, logits.size(-1)),
@@ -225,6 +248,7 @@ class GPT(nn.Module):
         if top_k is not None and top_k <= 0:
             raise ValueError("top_k must be positive or None.")
         for _ in range(max_new_tokens):
+            # Keep the most recent context inside positional-embedding limits.
             idx_cond = idx[:, -self.config.block_size:]
 
             logits, _ = self(idx_cond)
@@ -233,6 +257,8 @@ class GPT(nn.Module):
             if temperature <= 0:
                 next_id = torch.argmax(logits, dim=-1, keepdim=True)
             else:
+                # Softmax sampling: higher temperature increases diversity;
+                # low/zero temperature favors a stable learned completion.
                 logits = logits / temperature
 
                 if top_k is not None:
